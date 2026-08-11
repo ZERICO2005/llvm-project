@@ -2808,7 +2808,7 @@ define float @bitcast_to_float_zero(i32 %arg) {
 
 define float @bitcast_to_float_nzero(i32 %arg) {
 ; CHECK: Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none)
-; CHECK-LABEL: define nofpclass(zero) float @bitcast_to_float_nzero
+; CHECK-LABEL: define nofpclass(zero sub) float @bitcast_to_float_nzero
 ; CHECK-SAME: (i32 [[ARG:%.*]]) #[[ATTR3]] {
 ; CHECK-NEXT:    [[OR:%.*]] = or i32 [[ARG]], 134217728
 ; CHECK-NEXT:    [[CAST:%.*]] = bitcast i32 [[OR]] to float
@@ -2902,7 +2902,7 @@ define double @bitcast_to_double_zero(i64 %arg) {
 
 define double @bitcast_to_double_nzero(i64 %arg) {
 ; CHECK: Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(none)
-; CHECK-LABEL: define nofpclass(zero) double @bitcast_to_double_nzero
+; CHECK-LABEL: define nofpclass(zero sub) double @bitcast_to_double_nzero
 ; CHECK-SAME: (i64 [[ARG:%.*]]) #[[ATTR3]] {
 ; CHECK-NEXT:    [[OR:%.*]] = or i64 [[ARG]], 1152921504606846976
 ; CHECK-NEXT:    [[CAST:%.*]] = bitcast i64 [[OR]] to double
