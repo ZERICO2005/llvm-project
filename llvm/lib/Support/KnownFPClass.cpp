@@ -285,6 +285,74 @@ KnownFPClass KnownFPClass::bitcast(const fltSemantics &FltSemantics,
       Known.knownNot(fcSNan);
     else if (QuietBitKnownClear)
       Known.knownNot(fcQNan);
+  } else if (&FltSemantics == &APFloat::x87DoubleExtended()) {
+    // Layout of the x87 floating point type:
+    // [0:62] fraction
+    // [63] explicit integer bit
+    // [0:63] mantissa
+    // [64:78] exponent
+    // [79] sign bit
+    // APFloat treats the x87 pseudo encodings as documented in
+    // fltSemantics::hasExplicitIntegerBit.
+    const unsigned FractionBits = FltSemantics.precision - 1;
+    const APInt FractionMask =
+        APInt::getLowBitsSet(FltSemantics.sizeInBits, FractionBits);
+    const APInt ExponentMask = APInt::getBitsSet(
+        FltSemantics.sizeInBits, FractionBits + 1,
+        FltSemantics.sizeInBits - 1);
+
+    const bool ExponentKnownAllZeros =
+        (Bits.Zero & ExponentMask) == ExponentMask;
+    const bool ExponentKnownAllOnes = (Bits.One & ExponentMask) == ExponentMask;
+    const bool ExponentKnownNotAllZeros = !(Bits.One & ExponentMask).isZero();
+    const bool ExponentKnownNotAllOnes = !(Bits.Zero & ExponentMask).isZero();
+    const bool FractionKnownAllZeros =
+        (Bits.Zero & FractionMask) == FractionMask;
+    const bool FractionKnownNotAllZeros = !(Bits.One & FractionMask).isZero();
+    const bool IntegerBitKnownSet = Bits.One[FractionBits];
+    const bool IntegerBitKnownClear = Bits.Zero[FractionBits];
+
+    // zero and subnormal require an exponent with all zero bits and a cleared
+    // integer bit.
+    if (ExponentKnownNotAllZeros || IntegerBitKnownSet)
+      Known.knownNot(fcZero | fcSubnormal);
+
+    // infinity and NaN require an exponent with all one bits.
+    if (ExponentKnownNotAllOnes || IntegerBitKnownClear ||
+        FractionKnownNotAllZeros)
+      Known.knownNot(fcInf);
+
+    // normal values have an exponent that is not all zeros or all ones.
+
+    // A normal x87 value has its integer bit set. A zero exponent with that
+    // bit set is the x87 pseudodenormal encoding, which APFloat treats as
+    // normal.
+    if (IntegerBitKnownClear || ExponentKnownAllOnes)
+      Known.knownNot(fcNormal);
+
+    // A subnormal has a nonzero fraction; NaNs are possible with a zero
+    // fraction through pseudoinfinity and unnormal encodings.
+    if (FractionKnownAllZeros)
+      Known.knownNot(fcSubnormal);
+
+    // We can rule out NaN if the value has all exponent bits set to zero, or
+    // if the value is a canonical normal or infinity.
+    if (ExponentKnownAllZeros ||
+        (IntegerBitKnownSet &&
+        (ExponentKnownNotAllOnes || FractionKnownAllZeros)))
+      Known.knownNot(fcNan);
+
+    if (!Known.isKnownNeverNaN()) {
+      const bool SignalingBitKnownSet = Bits.One[FractionBits - 1];
+      const bool SignalingBitKnownClear = Bits.Zero[FractionBits - 1];
+
+      if (SignalingBitKnownSet)
+        Known.knownNot(fcSNan);
+      if (SignalingBitKnownClear)
+        Known.knownNot(fcQNan);
+    }
+  } else {
+    // memcmp
   }
 
   return Known;
