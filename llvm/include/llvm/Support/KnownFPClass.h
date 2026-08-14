@@ -323,6 +323,9 @@ struct KnownFPClass {
   /// Report known values for tanh
   LLVM_ABI static KnownFPClass tanh(const KnownFPClass &Src);
 
+  /// Report known values for acosh
+  LLVM_ABI static KnownFPClass acosh(const KnownFPClass &Src);
+
   /// Report known values for asin
   LLVM_ABI static KnownFPClass asin(const KnownFPClass &Src);
 
@@ -447,6 +450,10 @@ struct KnownFPClass {
   /// Propagate known class for sqrt
   static LLVM_ABI KnownFPClass
   sqrt(const KnownFPClass &Src, DenormalMode Mode = DenormalMode::getDynamic());
+
+  /// Propagate known class for cbrt
+  LLVM_ABI static KnownFPClass
+  cbrt(const KnownFPClass &Src, DenormalMode Mode = DenormalMode::getDynamic());
 
   /// Propagate known class for fpext.
   static LLVM_ABI KnownFPClass fpext(const KnownFPClass &KnownSrc,

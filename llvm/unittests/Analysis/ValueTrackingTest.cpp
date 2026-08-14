@@ -10,6 +10,7 @@
 #include "llvm/ADT/FloatingPointMode.h"
 #include "llvm/Analysis/AssumptionCache.h"
 #include "llvm/Analysis/FloatingPointPredicateUtils.h"
+#include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/AsmParser/Parser.h"
 #include "llvm/IR/ConstantRange.h"
 #include "llvm/IR/Dominators.h"
@@ -2378,6 +2379,82 @@ TEST_F(ComputeKnownFPClassTest, SqrtNszSignBit) {
               NoUseInstrInfoNSZNoNan.KnownFPClasses);
     EXPECT_EQ(std::nullopt, NoUseInstrInfoNSZNoNan.SignBit);
   }
+}
+
+TEST_F(ComputeKnownFPClassTest, CbrtLibCall) {
+  parseAssembly(R"(
+    declare float @cbrtf(float)
+
+    define float @test(float nofpclass(nan) %arg) {
+      %A = call float @cbrtf(float %arg)
+      ret float %A
+    })");
+
+  TargetLibraryInfoImpl TLII(M->getTargetTriple());
+  TargetLibraryInfo TLI(TLII);
+
+  EXPECT_EQ(fcInf | fcNormal | fcZero,
+            computeKnownFPClass(A, M->getDataLayout(), fcAllFlags, &TLI)
+                .KnownFPClasses);
+}
+
+TEST_F(ComputeKnownFPClassTest, CbrtLibCallRequiresTLIAndBuiltin) {
+  parseAssembly(R"(
+    declare float @cbrtf(float)
+
+    define float @test(float %arg) {
+      %A = call float @cbrtf(float %arg)
+      %A2 = call float @cbrtf(float %arg) #0
+      ret float %A2
+    }
+
+    attributes #0 = { nobuiltin }
+    )");
+
+  TargetLibraryInfoImpl TLII(M->getTargetTriple());
+  TargetLibraryInfo TLI(TLII);
+
+  EXPECT_EQ(fcAllFlags,
+            computeKnownFPClass(A, M->getDataLayout()).KnownFPClasses);
+  EXPECT_EQ(fcAllFlags,
+            computeKnownFPClass(A2, M->getDataLayout(), fcAllFlags, &TLI)
+                .KnownFPClasses);
+}
+
+TEST_F(ComputeKnownFPClassTest, CbrtLibCallLocalDefinition) {
+  parseAssembly(R"(
+    define internal float @cbrtf(float %arg) {
+      ret float %arg
+    }
+
+    define float @test(float %arg) {
+      %A = call float @cbrtf(float %arg)
+      ret float %A
+    })");
+
+  TargetLibraryInfoImpl TLII(M->getTargetTriple());
+  TargetLibraryInfo TLI(TLII);
+
+  EXPECT_EQ(fcAllFlags,
+            computeKnownFPClass(A, M->getDataLayout(), fcAllFlags, &TLI)
+                .KnownFPClasses);
+}
+
+TEST_F(ComputeKnownFPClassTest, CbrtLibCallInvalidPrototype) {
+  parseAssembly(R"(
+    declare double @cbrtf(double)
+
+    define double @test(double %arg) {
+      %A = call double @cbrtf(double %arg)
+      ret double %A
+    })");
+
+  TargetLibraryInfoImpl TLII(M->getTargetTriple());
+  TargetLibraryInfo TLI(TLII);
+
+  EXPECT_EQ(fcAllFlags,
+            computeKnownFPClass(A, M->getDataLayout(), fcAllFlags, &TLI)
+                .KnownFPClasses);
 }
 
 TEST_F(ComputeKnownFPClassTest, Constants) {
