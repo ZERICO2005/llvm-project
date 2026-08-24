@@ -230,6 +230,33 @@ KnownFPClass KnownFPClass::canonicalize(const KnownFPClass &KnownSrc,
   return Known;
 }
 
+static FPClassTest getUnrepresentableClasses(const fltSemantics &FltSemantics) {
+  FPClassTest Unsupported = fcNone;
+
+  if (!APFloat::semanticsHasSignedRepr(FltSemantics))
+    Unsupported |= fcNegative;
+
+  if (!APFloat::semanticsHasZero(FltSemantics))
+    Unsupported |= fcZero;
+
+  if (!FltSemantics.hasDenormals)
+    Unsupported |= fcSubnormal;
+
+  if (!APFloat::semanticsHasInf(FltSemantics))
+    Unsupported |= fcInf;
+
+  if (!APFloat::semanticsHasNaN(FltSemantics))
+    Unsupported |= fcNan;
+
+  if (FltSemantics.nonFiniteBehavior == fltNonfiniteBehavior::NanOnly)
+    Unsupported |= fcSNan;
+
+  if (FltSemantics.nanEncoding == fltNanEncoding::NegativeZero)
+    Unsupported |= fcNegZero;
+
+  return Unsupported;
+}
+
 KnownFPClass KnownFPClass::bitcast(const fltSemantics &FltSemantics,
                                    const KnownBits &Bits) {
   assert(FltSemantics.sizeInBits == Bits.getBitWidth() &&
@@ -303,6 +330,19 @@ KnownBits KnownFPClass::toKnownBits(const fltSemantics &FltSemantics) const {
   if (FPClasses == fcNone)
     return Known;
 
+  if ((KnownFPClasses & getUnrepresentableClasses(FltSemantics)) != fcNone) {
+    // The source contains an unrepresentable class. Return unknown to be safe.
+    return Known;
+  }
+
+  const APFloatBase::Semantics Type = APFloat::SemanticsToEnum(FltSemantics);
+
+  const bool IsMultiUnitFPType = Type == APFloatBase::S_PPCDoubleDouble;
+
+  // TODO: Correctly handle endianness for multi-unit floating-point types.
+  if (IsMultiUnitFPType)
+    return Known;
+
   if (isKnownNever(fcNormal | fcSubnormal | fcNan)) {
     Known.setAllConflict();
 
@@ -318,11 +358,14 @@ KnownBits KnownFPClass::toKnownBits(const fltSemantics &FltSemantics) const {
     Known.One.clearSignBit();
   }
 
-  if (std::optional<bool> Sign = getSignBit()) {
-    if (*Sign)
-      Known.makeNegative();
-    else
-      Known.makeNonNegative();
+  // Copy the signbit.
+  if (APFloat::hasSignBitInMSB(FltSemantics) && !IsMultiUnitFPType) {
+    if (std::optional<bool> Sign = getSignBit()) {
+      if (*Sign)
+        Known.makeNonNegative();
+      else
+        Known.makeNegative();
+    }
   }
 
   return Known;
