@@ -388,6 +388,34 @@ KnownFPClass KnownFPClass::fsub(const KnownFPClass &KnownLHS,
   return fadd(KnownLHS, fneg(KnownRHS), Mode);
 }
 
+void KnownFPClass::propagateXorSign(const KnownFPClass &LHS, const KnownFPClass &RHS) {
+  // Normal and subnormal results require two non-zero finite operands.
+
+  // pos * neg = neg
+  // neg * pos = neg
+  if ((LHS.isKnownNever(fcPositive) || RHS.isKnownNever(fcNegative)) &&
+      (LHS.isKnownNever(fcNegative) || RHS.isKnownNever(fcPositive))) {
+    knownNot(fcNegative);
+  } else if ((LHS.isKnownNever(fcPosNormal | fcPosSubnormal) ||
+              RHS.isKnownNever(fcNegNormal | fcNegSubnormal)) &&
+              (LHS.isKnownNever(fcNegNormal | fcNegSubnormal) ||
+              RHS.isKnownNever(fcPosNormal | fcPosSubnormal))) {
+    knownNot(fcNegNormal | fcNegSubnormal);
+  }
+
+  // pos * pos = pos
+  // neg * neg = pos
+  if ((LHS.isKnownNever(fcPositive) || RHS.isKnownNever(fcPositive)) &&
+      (LHS.isKnownNever(fcNegative) || RHS.isKnownNever(fcNegative))) {
+    knownNot(fcPositive);
+  } else if ((LHS.isKnownNever(fcPosNormal | fcPosSubnormal) ||
+              RHS.isKnownNever(fcPosNormal | fcPosSubnormal)) &&
+              (LHS.isKnownNever(fcNegNormal | fcNegSubnormal) ||
+              RHS.isKnownNever(fcNegNormal | fcNegSubnormal))) {
+    knownNot(fcPosNormal | fcPosSubnormal);
+  }
+}
+
 KnownFPClass KnownFPClass::fmul(const KnownFPClass &KnownLHS,
                                 const KnownFPClass &KnownRHS,
                                 DenormalMode Mode) {
@@ -400,12 +428,12 @@ KnownFPClass KnownFPClass::fmul(const KnownFPClass &KnownLHS,
   // Inf * Y => Inf or NaN
   if (KnownLHS.isKnownAlways(fcInf | fcNan) ||
       KnownRHS.isKnownAlways(fcInf | fcNan))
-    Known.knownNot(fcNormal | fcSubnormal | fcZero);
+    Known.knownNot(fcZero);
 
   // 0 * Y => 0 or NaN
   if (KnownRHS.isKnownAlways(fcZero | fcNan) ||
       KnownLHS.isKnownAlways(fcZero | fcNan))
-    Known.knownNot(fcNormal | fcSubnormal | fcInf);
+    Known.knownNot(fcInf);
 
   if (!KnownLHS.isKnownNeverNaN() || !KnownRHS.isKnownNeverNaN())
     return Known;
@@ -467,25 +495,13 @@ KnownFPClass KnownFPClass::fdiv(const KnownFPClass &KnownLHS,
   // +X / -Y or -X / +Y => -Q
   Known.propagateXorSign(KnownLHS, KnownRHS);
 
-  // Normal and subnormal results require two non-zero finite operands.
-  if ((KnownLHS.isKnownNever(fcNegNormal | fcNegSubnormal) &&
-       KnownRHS.isKnownNever(fcNegNormal | fcNegSubnormal)) ||
-      (KnownLHS.isKnownNever(fcPosNormal | fcPosSubnormal) &&
-       KnownRHS.isKnownNever(fcPosNormal | fcPosSubnormal)))
-    Known.knownNot(fcNegNormal | fcNegSubnormal);
-  if ((KnownLHS.isKnownNever(fcNegNormal | fcNegSubnormal) &&
-       KnownRHS.isKnownNever(fcPosNormal | fcPosSubnormal)) ||
-      (KnownLHS.isKnownNever(fcPosNormal | fcPosSubnormal) &&
-       KnownRHS.isKnownNever(fcNegNormal | fcNegSubnormal)))
-    Known.knownNot(fcPosNormal | fcPosSubnormal);
-
   // 0 / X => 0 or NaN
   if (KnownLHS.isKnownAlways(fcZero))
-    Known.knownNot(fcSubnormal | fcNormal | fcInf);
+    Known.knownNot(fcInf);
 
   // X / 0 => NaN or Inf
   if (KnownRHS.isKnownAlways(fcZero))
-    Known.knownNot(fcFinite);
+    Known.knownNot(fcZero);
 
   return Known;
 }
