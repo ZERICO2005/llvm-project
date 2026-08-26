@@ -734,6 +734,8 @@ KnownFPClass KnownFPClass::atan(const KnownFPClass &KnownSrc,
 
   if (KnownSrc.cannotHaveNegativeInput())
     Known.knownNot(fcNegFinite);
+  else if (KnownSrc.cannotBeOrderedLessThanZero())
+    Known.knownNot(fcNegSubnormal | fcNegNormal);
 
   // We do this deduction last in case we were about to rule out a negative
   // subnormal output earlier.
@@ -742,7 +744,8 @@ KnownFPClass KnownFPClass::atan(const KnownFPClass &KnownSrc,
     // Negative subnormals can flush to +0.0.
     if (Known.isKnownNever(fcNegSubnormal) || !Mode.outputsMayBePositiveZero())
       Known.knownNot(fcPosZero);
-  }
+  } else if (KnownSrc.cannotBeOrderedGreaterThanZero())
+    Known.knownNot(fcPosSubnormal | fcPosNormal);
 
   return Known;
 }
