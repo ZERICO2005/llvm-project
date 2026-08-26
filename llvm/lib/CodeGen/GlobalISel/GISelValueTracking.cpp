@@ -1467,11 +1467,24 @@ void GISelValueTracking::computeKnownFPClass(Register R,
     break;
   }
   case TargetOpcode::G_FATAN: {
+    FPClassTest InterestedSrcs = InterestedClasses;
+
+    // We can rule out negative finite values if the source cannot have a
+    // negative value.
+    if ((InterestedClasses & fcNegFinite) != fcNone)
+      InterestedSrcs |= fcNegative;
+
+    // We can rule out positive finite values if the source cannot have a
+    // positive value.
+    if ((InterestedClasses & fcPosFinite) != fcNone)
+      InterestedSrcs |= fcPositive | fcNegSubnormal;
+
     Register Val = MI.getOperand(1).getReg();
     KnownFPClass KnownSrc;
-    computeKnownFPClass(Val, DemandedElts, InterestedClasses, KnownSrc,
-                        Depth + 1);
-    Known = KnownFPClass::atan(KnownSrc);
+    computeKnownFPClass(Val, DemandedElts, InterestedSrcs, KnownSrc, Depth + 1);
+    DenormalMode Mode =
+        MF->getDenormalMode(getFltSemanticForLLT(DstTy.getScalarType()));
+    Known = KnownFPClass::atan(KnownSrc, Mode);
     break;
   }
   case TargetOpcode::G_FTAN: {

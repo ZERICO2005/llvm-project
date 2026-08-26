@@ -5420,10 +5420,28 @@ void computeKnownFPClass(const Value *V, const APInt &DemandedElts,
       break;
     }
     case Intrinsic::atan: {
+      FPClassTest InterestedSrcs = InterestedClasses;
+
+      // We can rule out negative finite values if the source cannot have a
+      // negative value.
+      if ((InterestedClasses & fcNegFinite) != fcNone)
+        InterestedSrcs |= fcNegative;
+
+      // We can rule out positive finite values if the source cannot have a
+      // positive value.
+      if ((InterestedClasses & fcPosFinite) != fcNone)
+        InterestedSrcs |= fcPositive | fcNegSubnormal;
+
       KnownFPClass KnownSrc;
-      computeKnownFPClass(II->getArgOperand(0), DemandedElts, InterestedClasses,
+      computeKnownFPClass(II->getArgOperand(0), DemandedElts, InterestedSrcs,
                           KnownSrc, Q, Depth + 1);
-      Known = KnownFPClass::atan(KnownSrc);
+
+      const Function *F = II->getFunction();
+      DenormalMode Mode =
+          F ? F->getDenormalMode(
+                  II->getType()->getScalarType()->getFltSemantics())
+            : DenormalMode::getDynamic();
+      Known = KnownFPClass::atan(KnownSrc, Mode);
       break;
     }
     case Intrinsic::atan2: {

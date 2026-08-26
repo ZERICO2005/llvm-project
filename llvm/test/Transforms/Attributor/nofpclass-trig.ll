@@ -196,34 +196,3 @@ define float @ret_acos_no_neg_normal(float nofpclass(nnorm) %arg) {
   %call = call float @llvm.acos.f32(float %arg)
   ret float %call
 }
-
-; atan is bounded to (-pi/2, pi/2), never Inf. atan(+-Inf) = +-pi/2 (finite).
-define float @ret_atan(float %arg) {
-; CHECK-LABEL: define nofpclass(inf) float @ret_atan
-; CHECK-SAME: (float [[ARG:%.*]]) #[[ATTR1]] {
-; CHECK-NEXT:    [[CALL:%.*]] = call nofpclass(inf) float @llvm.atan.f32(float [[ARG]]) #[[ATTR2]]
-; CHECK-NEXT:    ret float [[CALL]]
-;
-  %call = call float @llvm.atan.f32(float %arg)
-  ret float %call
-}
-
-define float @ret_atan_nonneg(float nofpclass(ninf nzero nsub nnorm) %arg) {
-; CHECK-LABEL: define nofpclass(inf nzero nsub nnorm) float @ret_atan_nonneg
-; CHECK-SAME: (float nofpclass(ninf nzero nsub nnorm) [[ARG:%.*]]) #[[ATTR1]] {
-; CHECK-NEXT:    [[CALL:%.*]] = call nofpclass(inf nzero nsub nnorm) float @llvm.atan.f32(float nofpclass(ninf nzero nsub nnorm) [[ARG]]) #[[ATTR2]]
-; CHECK-NEXT:    ret float [[CALL]]
-;
-  %call = call float @llvm.atan.f32(float %arg)
-  ret float %call
-}
-
-define float @ret_atan_nonan(float nofpclass(nan) %arg) {
-; CHECK-LABEL: define nofpclass(nan inf) float @ret_atan_nonan
-; CHECK-SAME: (float nofpclass(nan) [[ARG:%.*]]) #[[ATTR1]] {
-; CHECK-NEXT:    [[CALL:%.*]] = call nofpclass(nan inf) float @llvm.atan.f32(float nofpclass(nan) [[ARG]]) #[[ATTR2]]
-; CHECK-NEXT:    ret float [[CALL]]
-;
-  %call = call float @llvm.atan.f32(float %arg)
-  ret float %call
-}

@@ -139,7 +139,7 @@ struct KnownFPClass {
     return isKnownNever(fcNegative) && isKnownNeverLogicalPosZero(Mode);
   }
 
-  /// Return true if it's know this can never be a negative value or a logical
+  /// Return true if it's known this can never be a negative value or a logical
   /// 0.
   ///
   ///      NaN --> true
@@ -149,6 +149,18 @@ struct KnownFPClass {
   bool cannotBeOrderedGreaterEqZero(DenormalMode Mode) const {
     return isKnownNever(fcPositive) && isKnownNeverLogicalNegZero(Mode);
   }
+
+  /// Return true if this cannot have a non-NaN positive value when interpreted
+  /// as an input under \p Mode.
+  bool cannotHavePositiveInput(DenormalMode Mode) const {
+    return isKnownNever(fcPositive) &&
+           (isKnownNever(fcNegSubnormal) || !Mode.inputsMayBePositiveZero());
+  }
+
+  /// Return true if this cannot have a non-NaN negative value.
+  ///
+  // TODO: Account for negative subnormals under positive-zero input mode.
+  bool cannotHaveNegativeInput() const { return isKnownNever(fcNegative); }
 
   KnownFPClass intersectWith(const KnownFPClass &RHS) const {
     return KnownFPClass(KnownFPClasses | RHS.KnownFPClasses,
@@ -341,7 +353,7 @@ struct KnownFPClass {
   LLVM_ABI static KnownFPClass acos(const KnownFPClass &Src);
 
   /// Report known values for atan
-  LLVM_ABI static KnownFPClass atan(const KnownFPClass &Src);
+  LLVM_ABI static KnownFPClass atan(const KnownFPClass &Src, DenormalMode Mode);
 
   /// Report known values for atan2
   LLVM_ABI static KnownFPClass

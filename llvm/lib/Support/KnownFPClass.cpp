@@ -721,17 +721,28 @@ KnownFPClass KnownFPClass::acos(const KnownFPClass &KnownSrc) {
   return Known;
 }
 
-KnownFPClass KnownFPClass::atan(const KnownFPClass &KnownSrc) {
+KnownFPClass KnownFPClass::atan(const KnownFPClass &KnownSrc,
+                                DenormalMode Mode) {
   KnownFPClass Known;
 
   // atan is bounded to (-pi/2, pi/2), never Inf. atan(+-Inf) = +-pi/2 (finite).
   Known.knownNot(fcInf);
 
-  // atan is sign-preserving: atan(x) < 0 iff x < 0.
-  if (KnownSrc.isKnownNever(fcNegative))
-    Known.knownNot(fcNegative);
-
   Known.propagateNonNaN(KnownSrc);
+
+  // atan is sign-preserving.
+
+  if (KnownSrc.cannotHaveNegativeInput())
+    Known.knownNot(fcNegFinite);
+
+  // We do this deduction last in case we were about to rule out a negative
+  // subnormal output earlier.
+  if (KnownSrc.cannotHavePositiveInput(Mode)) {
+    Known.knownNot(fcPosSubnormal | fcPosNormal);
+    // Negative subnormals can flush to +0.0.
+    if (Known.isKnownNever(fcNegSubnormal) || !Mode.outputsMayBePositiveZero())
+      Known.knownNot(fcPosZero);
+  }
 
   return Known;
 }
