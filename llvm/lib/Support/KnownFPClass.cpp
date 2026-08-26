@@ -644,14 +644,24 @@ KnownFPClass KnownFPClass::tan(const KnownFPClass &KnownSrc) {
   return Known;
 }
 
-KnownFPClass KnownFPClass::sinh(const KnownFPClass &KnownSrc) {
+KnownFPClass KnownFPClass::sinh(const KnownFPClass &KnownSrc, DenormalMode Mode) {
   KnownFPClass Known;
 
-  // sinh is sign-preserving: sinh(x) < 0 iff x < 0.
-  if (KnownSrc.isKnownNever(fcNegative))
+  Known.propagateNonNaN(KnownSrc);
+
+  // sinh is sign-preserving.
+
+  if (KnownSrc.cannotHaveNegativeInput())
     Known.knownNot(fcNegative);
 
-  Known.propagateNonNaN(KnownSrc);
+  // We do this deduction last in case we were about to rule out a negative
+  // subnormal output earlier.
+  if (KnownSrc.cannotHavePositiveInput(Mode)) {
+    Known.knownNot(fcPosSubnormal | fcPosNormal | fcPosInf);
+    // Negative subnormals can flush to +0.0.
+    if (Known.isKnownNot(fcNegSubnormal) || !Mode.outputsMayBePositiveZero())
+      Known.knownNot(fcPosZero);
+  }
 
   return Known;
 }
@@ -683,7 +693,7 @@ KnownFPClass KnownFPClass::tanh(const KnownFPClass &KnownSrc) {
   return Known;
 }
 
-KnownFPClass KnownFPClass::asin(const KnownFPClass &KnownSrc) {
+KnownFPClass KnownFPClass::asin(const KnownFPClass &KnownSrc, DenormalMode Mode) {
   KnownFPClass Known;
 
   // asin is bounded to [-pi/2, pi/2], never Inf.
@@ -692,8 +702,19 @@ KnownFPClass KnownFPClass::asin(const KnownFPClass &KnownSrc) {
   Known.propagateNonSNaN(KnownSrc);
 
   // asin is sign-preserving for finite arguments.
-  if (KnownSrc.isKnownNever(fcNegFinite))
+
+  if (KnownSrc.cannotHaveNegativeFiniteInput()) {
     Known.knownNot(fcNegFinite);
+  }
+
+  // We do this deduction last in case we were about to rule out a negative
+  // subnormal output earlier.
+  if (KnownSrc.cannotHavePositiveFiniteInput(Mode)) {
+    Known.knownNot(fcPosSubnormal | fcPosNormal);
+    // Negative subnormals can flush to +0.0.
+    if (Known.knownNot(fcNegSubnormal) || !Mode.outputsMayBePositiveZero())
+      Known.knownNot(fcPosZero);
+  }
 
   // NaN propagates. asin(x) is also NaN for |x| > 1, so we cannot rule
   // out NaN without knowing the source is in [-1, 1].

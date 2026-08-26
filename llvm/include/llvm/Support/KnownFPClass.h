@@ -139,7 +139,7 @@ struct KnownFPClass {
     return isKnownNever(fcNegative) && isKnownNeverLogicalPosZero(Mode);
   }
 
-  /// Return true if it's know this can never be a negative value or a logical
+  /// Return true if it's known this can never be a negative value or a logical
   /// 0.
   ///
   ///      NaN --> true
@@ -149,6 +149,31 @@ struct KnownFPClass {
   bool cannotBeOrderedGreaterEqZero(DenormalMode Mode) const {
     return isKnownNever(fcPositive) && isKnownNeverLogicalNegZero(Mode);
   }
+
+  /// Return true if this cannot have a non-NaN positive finite value when
+  /// interpreted as an input under \p Mode.
+  bool cannotHavePositiveFiniteInput(DenormalMode Mode) const {
+    return isKnownNever(fcPosFinite) &&
+           (isKnownNever(fcNegSubnormal) || !Mode.inputsMayBePositiveZero());
+  }
+
+  /// Return true if this cannot have a non-NaN positive value when interpreted
+  /// as an input under \p Mode.
+  bool cannotHavePositiveInput(DenormalMode Mode) const {
+    return isKnownNever(fcPosInf) && cannotHavePositiveFiniteInput(Mode);
+  }
+
+  /// Return true if this cannot have a non-NaN negative finite value.
+  ///
+  // TODO: Account for negative subnormals under positive-zero input mode.
+  bool cannotHaveNegativeFiniteInput() const {
+    return isKnownNever(fcNegFinite);
+  }
+
+  /// Return true if this cannot have a non-NaN negative value.
+  ///
+  // TODO: Account for negative subnormals under positive-zero input mode.
+  bool cannotHaveNegativeInput() const { return isKnownNever(fcNegative); }
 
   KnownFPClass intersectWith(const KnownFPClass &RHS) const {
     return KnownFPClass(KnownFPClasses | RHS.KnownFPClasses,
@@ -291,6 +316,11 @@ struct KnownFPClass {
 
   /// Report known values for frem
   LLVM_ABI static KnownFPClass
+  frem(const KnownFPClass &LHS, const KnownFPClass &RHS,
+       DenormalMode Mode = DenormalMode::getDynamic());
+
+  /// Report known values for frem x, x
+  LLVM_ABI static KnownFPClass
   frem_self(const KnownFPClass &Src,
             DenormalMode Mode = DenormalMode::getDynamic());
 
@@ -326,7 +356,7 @@ struct KnownFPClass {
   LLVM_ABI static KnownFPClass tan(const KnownFPClass &Src);
 
   /// Report known values for sinh
-  LLVM_ABI static KnownFPClass sinh(const KnownFPClass &Src);
+  LLVM_ABI static KnownFPClass sinh(const KnownFPClass &Src, DenormalMode Mode);
 
   /// Report known values for cosh
   LLVM_ABI static KnownFPClass cosh(const KnownFPClass &Src);
@@ -335,7 +365,7 @@ struct KnownFPClass {
   LLVM_ABI static KnownFPClass tanh(const KnownFPClass &Src);
 
   /// Report known values for asin
-  LLVM_ABI static KnownFPClass asin(const KnownFPClass &Src);
+  LLVM_ABI static KnownFPClass asin(const KnownFPClass &Src, DenormalMode Mode);
 
   /// Report known values for acos
   LLVM_ABI static KnownFPClass acos(const KnownFPClass &Src);

@@ -5406,10 +5406,27 @@ void computeKnownFPClass(const Value *V, const APInt &DemandedElts,
       break;
     }
     case Intrinsic::asin: {
+      FPClassTest InterestedSrcs = InterestedClasses;
+
+      // We can rule out negative finite values if the source cannot have a
+      // finite negative value.
+      if ((InterestedClasses & fcPosFinite) != fcNone)
+        InterestedSrcs |= fcPosFinite | fcNegSubnormal;
+
+      // We can rule out positive finite values if the source cannot have a
+      // finite positive value.
+      if ((InterestedClasses & fcNegFinite) != fcNone)
+        InterestedSrcs |= fcNegFinite;
+
+      const Function *F = II->getFunction();
+      DenormalMode Mode =
+          F ? F->getDenormalMode(
+                  II->getType()->getScalarType()->getFltSemantics())
+            : DenormalMode::getDynamic();
       KnownFPClass KnownSrc;
       computeKnownFPClass(II->getArgOperand(0), DemandedElts, InterestedClasses,
                           KnownSrc, Q, Depth + 1);
-      Known = KnownFPClass::asin(KnownSrc);
+      Known = KnownFPClass::asin(KnownSrc, Mode);
       break;
     }
     case Intrinsic::acos: {
