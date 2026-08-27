@@ -1066,72 +1066,153 @@ define float @ret_known_inf_or_nan_frem_known_inf_or_nan(float nofpclass(norm su
 
 ; frem(x, y) == x if |x| < |y|, up to the denormal mode.
 
-ret_frem_lhs_poszero_possubnormal_rhs_posnormal
+define float @ret_frem_lhs_poszero_possubnormal_rhs_posnormal(float nofpclass(nan inf pnorm nzero nsub nnorm) %lhs, float nofpclass(nan inf zero sub nnorm) %rhs) #0 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_negzero_negsubnormal_rhs_negnormal
+define float @ret_frem_lhs_negzero_negsubnormal_rhs_negnormal(float nofpclass(nan inf pzero psub pnorm nnorm) %lhs, float nofpclass(nan inf zero sub pnorm) %rhs) #0 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_zero_subnormal_rhs_normal
+define float @ret_frem_lhs_zero_subnormal_rhs_normal(float nofpclass(nan inf norm) %lhs, float nofpclass(nan inf zero sub) %rhs) #0 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_posfinite_rhs_posinf
+define float @ret_frem_lhs_posfinite_rhs_posinf(float nofpclass(nan inf nzero nsub nnorm) %lhs, float nofpclass(nan ninf zero sub norm) %rhs) #0 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_negfinite_rhs_neginf
+define float @ret_frem_lhs_negfinite_rhs_neginf(float nofpclass(nan inf pzero psub pnorm) %lhs, float nofpclass(nan pinf zero sub norm) %rhs) #0 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_finite_rhs_inf
+define float @ret_frem_lhs_finite_rhs_inf(float nofpclass(nan inf) %lhs, float nofpclass(nan zero sub norm) %rhs) #0 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_finite_rhs_inf_mode_ftpz_dapz
+define float @ret_frem_lhs_finite_rhs_inf_mode_ftpz_dapz(float nofpclass(nan inf) %lhs, float nofpclass(nan zero sub norm) %rhs) #5 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_finite_rhs_inf_mode_dynamic_dynamic
+define float @ret_frem_lhs_finite_rhs_inf_mode_dynamic_dynamic(float nofpclass(nan inf) %lhs, float nofpclass(nan zero sub norm) %rhs) #4 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
 ; Sign preservation
 
-ret_frem_lhs_posnormal_possubnormal_rhs_any
+define float @ret_frem_lhs_posnormal_possubnormal_rhs_any(float nofpclass(nan inf zero nsub) %lhs, float %rhs) #0 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_negnormal_negsubnormal_rhs_any
+define float @ret_frem_lhs_negnormal_negsubnormal_rhs_any(float nofpclass(nan inf zero psub) %lhs, float %rhs) #0 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_normal_subnormal_rhs_any
+define float @ret_frem_lhs_normal_subnormal_rhs_any(float nofpclass(nan inf zero) %lhs, float %rhs) #0 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_posfinite_rhs_any
+define float @ret_frem_lhs_posfinite_rhs_any(float nofpclass(nan inf nzero nsub nnorm) %lhs, float %rhs) #0 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_posfinite_negzero_rhs_any
+define float @ret_frem_lhs_posfinite_negzero_rhs_any(float nofpclass(nan inf nsub nnorm) %lhs, float %rhs) #0 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
 ; TODO: If we can guarantee that subnormals flush to positive zero under DAPZ,
 ; then we can rule out negatives here.
-ret_frem_lhs_posfinite_negsubnormal_rhs_any_mode_dynamic_dapz
+define float @ret_frem_lhs_posfinite_negsubnormal_rhs_any_mode_dynamic_dapz(float nofpclass(nan inf nzero nnorm) %lhs, float %rhs) #8 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
 ; Test denormal cases
 
 ; We should be able to rule out positive zero no matter the denormal mode here.
-ret_frem_lhs_never_posfinite_negnormal_negsubnormal_rhs_any_mode_dynamic_dynamic
+define float @ret_frem_lhs_never_posfinite_negnormal_negsubnormal_rhs_any_mode_dynamic_dynamic(float nofpclass(pzero sub norm) %lhs, float %rhs) #4 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
 ; We can rule out positive zero if denormal outputs cannot be positive zero for
 ; these cases:
 
-ret_frem_lhs_never_posfinite_negsubnormal_rhs_any
+define float @ret_frem_lhs_never_posfinite_negsubnormal_rhs_any(float nofpclass(pzero psub pnorm nsub) %lhs, float %rhs) #0 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_never_posfinite_negsubnormal_rhs_any_mode_ieee_dynamic
+define float @ret_frem_lhs_never_posfinite_negsubnormal_rhs_any_mode_ieee_dynamic(float nofpclass(pzero psub pnorm nsub) %lhs, float %rhs) #3 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_never_posfinite_negsubnormal_rhs_any_mode_ftz_dynamic
+define float @ret_frem_lhs_never_posfinite_negsubnormal_rhs_any_mode_ftz_dynamic(float nofpclass(pzero psub pnorm nsub) %lhs, float %rhs) #11 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_never_posfinite_negsubnormal_rhs_any_mode_ftpz_dynamic
+define float @ret_frem_lhs_never_posfinite_negsubnormal_rhs_any_mode_ftpz_dynamic(float nofpclass(pzero psub pnorm nsub) %lhs, float %rhs) #7 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_never_posfinite_negsubnormal_rhs_any_mode_dynamic_dynamic
+define float @ret_frem_lhs_never_posfinite_negsubnormal_rhs_any_mode_dynamic_dynamic(float nofpclass(pzero psub pnorm nsub) %lhs, float %rhs) #4 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
 ; We can rule out positive zero if both the input and output denormal modes are
 ; not positive zero.
 
-ret_frem_lhs_never_posfinite_negnormal_rhs_any
+define float @ret_frem_lhs_never_posfinite_negnormal_rhs_any(float nofpclass(pzero psub pnorm nnorm) %lhs, float %rhs) #0 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_ieee_ieee
+define float @ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_ieee_ieee(float nofpclass(pzero psub pnorm nnorm) %lhs, float %rhs) #0 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_ftz_daz
+define float @ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_ftz_daz(float nofpclass(pzero psub pnorm nnorm) %lhs, float %rhs) #6 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_ieee_dynamic
+define float @ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_ieee_dynamic(float nofpclass(pzero psub pnorm nnorm) %lhs, float %rhs) #3 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_dynamic_ieee
+define float @ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_dynamic_ieee(float nofpclass(pzero psub pnorm nnorm) %lhs, float %rhs) #9 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_ieee_dapz
+define float @ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_ieee_dapz(float nofpclass(pzero psub pnorm nnorm) %lhs, float %rhs) #2 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
-ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_ftpz_ieee
+define float @ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_ftpz_ieee(float nofpclass(pzero psub pnorm nnorm) %lhs, float %rhs) #10 {
+  %frem = frem float %lhs, %rhs
+  ret float %frem
+}
 
 ; General FTPZ/DAPZ tests:
 
@@ -1181,6 +1262,12 @@ attributes #2 = { denormal_fpenv(ieee|positivezero) }
 attributes #3 = { denormal_fpenv(ieee|dynamic) }
 attributes #4 = { denormal_fpenv(dynamic|dynamic) }
 attributes #5 = { denormal_fpenv(positivezero|positivezero) }
+attributes #6 = { denormal_fpenv(preservesign|preservesign) }
+attributes #7 = { denormal_fpenv(positivezero|dynamic) }
+attributes #8 = { denormal_fpenv(dynamic|positivezero) }
+attributes #9 = { denormal_fpenv(dynamic|ieee) }
+attributes #10 = { denormal_fpenv(positivezero|ieee) }
+attributes #11 = { denormal_fpenv(preservesign|dynamic) }
 
 ;; NOTE: These prefixes are unused and the list is autogenerated. Do not add tests below this line:
 ; TUNIT: {{.*}}
