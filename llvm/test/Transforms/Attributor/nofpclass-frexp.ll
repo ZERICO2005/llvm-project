@@ -459,6 +459,33 @@ define float @ret_frexp_f32_0_nopzero_daz_ieee(float nofpclass(pzero) %arg0) #5 
   ret float %call.0
 }
 
+; TODO: A negative subnormal input may be flushed to +0.0, so +0.0 must not be
+; ruled out.
+define float @ret_frexp_negnormal_negsubnormal_mode_dynamic_dynamic(float nofpclass(nan inf zero psub pnorm) %arg0) #3 {
+; CHECK-LABEL: define nofpclass(nan inf pzero sub pnorm) float @ret_frexp_negnormal_negsubnormal_mode_dynamic_dynamic
+; CHECK-SAME: (float nofpclass(nan inf zero psub pnorm) [[ARG0:%.*]]) #[[ATTR4]] {
+; CHECK-NEXT:    [[CALL:%.*]] = call { float, i32 } @llvm.frexp.f32.i32(float nofpclass(nan inf zero psub pnorm) [[ARG0]]) #[[ATTR7]]
+; CHECK-NEXT:    [[FRACTION:%.*]] = extractvalue { float, i32 } [[CALL]], 0
+; CHECK-NEXT:    ret float [[FRACTION]]
+;
+  %call = call { float, i32 } @llvm.frexp.f32.i32(float %arg0)
+  %call.0 = extractvalue { float, i32 } %call, 0
+  ret float %call.0
+}
+
+; TODO: A negative subnormal input may be flushed to +0.0, so +0.0 must not be
+; ruled out.
+define float @ret_frexp_negnormal_negsubnormal_mode_ftpz_dapz(float nofpclass(nan inf zero psub pnorm) %arg0) #2 {
+; CHECK-LABEL: define nofpclass(nan inf zero sub pnorm) float @ret_frexp_negnormal_negsubnormal_mode_ftpz_dapz
+; CHECK-SAME: (float nofpclass(nan inf zero psub pnorm) [[ARG0:%.*]]) #[[ATTR3]] {
+; CHECK-NEXT:    [[CALL:%.*]] = call { float, i32 } @llvm.frexp.f32.i32(float nofpclass(nan inf zero psub pnorm) [[ARG0]]) #[[ATTR7]]
+; CHECK-NEXT:    [[FRACTION:%.*]] = extractvalue { float, i32 } [[CALL]], 0
+; CHECK-NEXT:    ret float [[FRACTION]]
+;
+  %call = call { float, i32 } @llvm.frexp.f32.i32(float %arg0)
+  %call.0 = extractvalue { float, i32 } %call, 0
+  ret float %call.0
+}
 
 attributes #0 = { denormal_fpenv(ieee|ieee) }
 attributes #1 = { denormal_fpenv(preservesign) }

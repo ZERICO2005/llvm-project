@@ -784,6 +784,54 @@ define float @ret_maximumnum_noqnan__nosnan(float nofpclass(qnan) %arg0, float n
   ret float %call
 }
 
+; TODO: A negative subnormal input may be flushed to +0.0, so +0.0 must not be
+; ruled out.
+define float @ret_maximumnum_negnormal_negsubnormal_both_lhs_rhs_mode_dynamic_dynamic(float nofpclass(nan inf zero psub pnorm) %lhs, float nofpclass(nan inf zero psub pnorm) %rhs) #3 {
+; CHECK-LABEL: define nofpclass(nan inf zero psub pnorm) float @ret_maximumnum_negnormal_negsubnormal_both_lhs_rhs_mode_dynamic_dynamic
+; CHECK-SAME: (float nofpclass(nan inf zero psub pnorm) [[LHS:%.*]], float nofpclass(nan inf zero psub pnorm) [[RHS:%.*]]) #[[ATTR4]] {
+; CHECK-NEXT:    [[CALL:%.*]] = call nofpclass(nan inf zero psub pnorm) float @llvm.maximumnum.f32(float nofpclass(nan inf zero psub pnorm) [[LHS]], float nofpclass(nan inf zero psub pnorm) [[RHS]]) #[[ATTR9]]
+; CHECK-NEXT:    ret float [[CALL]]
+;
+  %call = call float @llvm.maximumnum.f32(float %lhs, float %rhs)
+  ret float %call
+}
+
+; TODO: A negative subnormal input may be flushed to +0.0, so +0.0 must not be
+; ruled out.
+define float @ret_maximumnum_negnormal_negsubnormal_both_lhs_rhs_mode_ftpz_dapz(float nofpclass(nan inf zero psub pnorm) %lhs, float nofpclass(nan inf zero psub pnorm) %rhs) #2 {
+; CHECK-LABEL: define nofpclass(nan inf zero psub pnorm) float @ret_maximumnum_negnormal_negsubnormal_both_lhs_rhs_mode_ftpz_dapz
+; CHECK-SAME: (float nofpclass(nan inf zero psub pnorm) [[LHS:%.*]], float nofpclass(nan inf zero psub pnorm) [[RHS:%.*]]) #[[ATTR3]] {
+; CHECK-NEXT:    [[CALL:%.*]] = call nofpclass(nan inf zero psub pnorm) float @llvm.maximumnum.f32(float nofpclass(nan inf zero psub pnorm) [[LHS]], float nofpclass(nan inf zero psub pnorm) [[RHS]]) #[[ATTR9]]
+; CHECK-NEXT:    ret float [[CALL]]
+;
+  %call = call float @llvm.maximumnum.f32(float %lhs, float %rhs)
+  ret float %call
+}
+
+; TODO: A negative subnormal input may be flushed to +0.0, so +0.0 must not be
+; ruled out.
+define float @ret_minimumnum_negnormal_negsubnormal_both_lhs_rhs_mode_dynamic_dynamic(float nofpclass(nan inf zero psub pnorm) %lhs, float nofpclass(nan inf zero psub pnorm) %rhs) #3 {
+; CHECK-LABEL: define nofpclass(nan inf zero psub pnorm) float @ret_minimumnum_negnormal_negsubnormal_both_lhs_rhs_mode_dynamic_dynamic
+; CHECK-SAME: (float nofpclass(nan inf zero psub pnorm) [[LHS:%.*]], float nofpclass(nan inf zero psub pnorm) [[RHS:%.*]]) #[[ATTR4]] {
+; CHECK-NEXT:    [[CALL:%.*]] = call nofpclass(nan inf zero psub pnorm) float @llvm.minimumnum.f32(float nofpclass(nan inf zero psub pnorm) [[LHS]], float nofpclass(nan inf zero psub pnorm) [[RHS]]) #[[ATTR9]]
+; CHECK-NEXT:    ret float [[CALL]]
+;
+  %call = call float @llvm.minimumnum.f32(float %lhs, float %rhs)
+  ret float %call
+}
+
+; TODO: A negative subnormal input may be flushed to +0.0, so +0.0 must not be
+; ruled out.
+define float @ret_minimumnum_negnormal_negsubnormal_both_lhs_rhs_mode_ftpz_dapz(float nofpclass(nan inf zero psub pnorm) %lhs, float nofpclass(nan inf zero psub pnorm) %rhs) #2 {
+; CHECK-LABEL: define nofpclass(nan inf zero psub pnorm) float @ret_minimumnum_negnormal_negsubnormal_both_lhs_rhs_mode_ftpz_dapz
+; CHECK-SAME: (float nofpclass(nan inf zero psub pnorm) [[LHS:%.*]], float nofpclass(nan inf zero psub pnorm) [[RHS:%.*]]) #[[ATTR3]] {
+; CHECK-NEXT:    [[CALL:%.*]] = call nofpclass(nan inf zero psub pnorm) float @llvm.minimumnum.f32(float nofpclass(nan inf zero psub pnorm) [[LHS]], float nofpclass(nan inf zero psub pnorm) [[RHS]]) #[[ATTR9]]
+; CHECK-NEXT:    ret float [[CALL]]
+;
+  %call = call float @llvm.minimumnum.f32(float %lhs, float %rhs)
+  ret float %call
+}
+
 attributes #0 = { denormal_fpenv(ieee|ieee) }
 attributes #1 = { denormal_fpenv(preservesign) }
 attributes #2 = { denormal_fpenv(positivezero|positivezero) }
