@@ -1064,6 +1064,77 @@ define float @ret_known_inf_or_nan_frem_known_inf_or_nan(float nofpclass(norm su
   ret float %frem
 }
 
+; frem(x, y) == x if |x| < |y|, up to the denormal mode.
+
+ret_frem_lhs_poszero_possubnormal_rhs_posnormal
+
+ret_frem_lhs_negzero_negsubnormal_rhs_negnormal
+
+ret_frem_lhs_zero_subnormal_rhs_normal
+
+ret_frem_lhs_posfinite_rhs_posinf
+
+ret_frem_lhs_negfinite_rhs_neginf
+
+ret_frem_lhs_finite_rhs_inf
+
+ret_frem_lhs_finite_rhs_inf_mode_ftpz_dapz
+
+ret_frem_lhs_finite_rhs_inf_mode_dynamic_dynamic
+
+; Sign preservation
+
+ret_frem_lhs_posnormal_possubnormal_rhs_any
+
+ret_frem_lhs_negnormal_negsubnormal_rhs_any
+
+ret_frem_lhs_normal_subnormal_rhs_any
+
+ret_frem_lhs_posfinite_rhs_any
+
+ret_frem_lhs_posfinite_negzero_rhs_any
+
+; TODO: If we can guarantee that subnormals flush to positive zero under DAPZ,
+; then we can rule out negatives here.
+ret_frem_lhs_posfinite_negsubnormal_rhs_any_mode_dynamic_dapz
+
+; Test denormal cases
+
+; We should be able to rule out positive zero no matter the denormal mode here.
+ret_frem_lhs_never_posfinite_negnormal_negsubnormal_rhs_any_mode_dynamic_dynamic
+
+; We can rule out positive zero if denormal outputs cannot be positive zero for
+; these cases:
+
+ret_frem_lhs_never_posfinite_negsubnormal_rhs_any
+
+ret_frem_lhs_never_posfinite_negsubnormal_rhs_any_mode_ieee_dynamic
+
+ret_frem_lhs_never_posfinite_negsubnormal_rhs_any_mode_ftz_dynamic
+
+ret_frem_lhs_never_posfinite_negsubnormal_rhs_any_mode_ftpz_dynamic
+
+ret_frem_lhs_never_posfinite_negsubnormal_rhs_any_mode_dynamic_dynamic
+
+; We can rule out positive zero if both the input and output denormal modes are
+; not positive zero.
+
+ret_frem_lhs_never_posfinite_negnormal_rhs_any
+
+ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_ieee_ieee
+
+ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_ftz_daz
+
+ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_ieee_dynamic
+
+ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_dynamic_ieee
+
+ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_ieee_dapz
+
+ret_frem_lhs_never_posfinite_negnormal_rhs_any_mode_ftpz_ieee
+
+; General FTPZ/DAPZ tests:
+
 define float @ret_frem_negnormal_negsubnormal_both_lhs_rhs_mode_dynamic_dynamic(float nofpclass(nan inf zero psub pnorm) %lhs, float nofpclass(nan inf zero psub pnorm) %rhs) #4 {
 ; CHECK-LABEL: define nofpclass(snan inf psub pnorm) float @ret_frem_negnormal_negsubnormal_both_lhs_rhs_mode_dynamic_dynamic
 ; CHECK-SAME: (float nofpclass(nan inf zero psub pnorm) [[LHS:%.*]], float nofpclass(nan inf zero psub pnorm) [[RHS:%.*]]) #[[ATTR5:[0-9]+]] {
