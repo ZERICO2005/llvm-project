@@ -1318,6 +1318,39 @@ static Value *foldIDivShl(BinaryOperator &I, InstCombiner::BuilderTy &Builder) {
   return nullptr;
 }
 
+/// Return true if a matching remainder is known to be zero at the division.
+static bool isKnownExactFromRem(const BinaryOperator &Div,
+                                const SimplifyQuery &Q) {
+  assert((Div.getOpcode() == Instruction::SDiv ||
+          Div.getOpcode() == Instruction::UDiv) &&
+         "Expected integer divide");
+
+  constexpr unsigned MaxNumUsersToScan = 16;
+  unsigned RemOpcode = Div.getOpcode() == Instruction::SDiv
+                           ? Instruction::SRem
+                           : Instruction::URem;
+
+  auto HasMatchingZeroRem = [&](Value *V) {
+    if (V->hasNUsesOrMore(MaxNumUsersToScan + 1))
+      return false;
+
+    for (User *U : V->users()) {
+      auto *Rem = dyn_cast<BinaryOperator>(U);
+      if (!Rem || Rem->getOpcode() != RemOpcode ||
+          Rem->getOperand(0) != Div.getOperand(0) ||
+          Rem->getOperand(1) != Div.getOperand(1) ||
+          (Q.DT && !Q.DT->dominates(Rem, &Div)))
+        continue;
+
+      if (computeKnownBits(Rem, Q.getWithInstruction(&Div)).isZero())
+        return true;
+    }
+    return false;
+  };
+
+  return HasMatchingZeroRem(Div.getOperand(0));
+}
+
 /// Common integer divide/remainder transforms
 Instruction *InstCombinerImpl::commonIDivRemTransforms(BinaryOperator &I) {
   assert(I.isIntDivRem() && "Unexpected instruction");
@@ -1801,6 +1834,11 @@ Instruction *InstCombinerImpl::visitUDiv(BinaryOperator &I) {
                                   SQ.getWithInstruction(&I)))
     return replaceInstUsesWith(I, V);
 
+  if (!I.isExact() && isKnownExactFromRem(I, SQ)) {
+    I.setIsExact();
+    return &I;
+  }
+
   if (Instruction *X = foldVectorBinop(I))
     return X;
 
@@ -1895,6 +1933,11 @@ Instruction *InstCombinerImpl::visitSDiv(BinaryOperator &I) {
   if (Value *V = simplifySDivInst(I.getOperand(0), I.getOperand(1), I.isExact(),
                                   SQ.getWithInstruction(&I)))
     return replaceInstUsesWith(I, V);
+
+  if (!I.isExact() && isKnownExactFromRem(I, SQ)) {
+    I.setIsExact();
+    return &I;
+  }
 
   if (Instruction *X = foldVectorBinop(I))
     return X;
