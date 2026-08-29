@@ -3165,12 +3165,18 @@ Value *InstCombinerImpl::SimplifyDemandedUseFPClass(Instruction *I,
     case Intrinsic::log:
     case Intrinsic::log2:
     case Intrinsic::log10: {
+      Type *EltTy = VTy->getScalarType();
+      bool IsKnownNeverMultiUnitFPType = !EltTy->isMultiUnitFPType();
+
       FPClassTest DemandedSrcMask = DemandedMask & (fcNan | fcPosInf);
       if (DemandedMask & fcNan)
         DemandedSrcMask |= fcNan;
 
-      Type *EltTy = VTy->getScalarType();
       DenormalMode Mode = F.getDenormalMode(EltTy->getFltSemantics());
+
+      if (!IsKnownNeverMultiUnitFPType &&
+          (DemandedMask & (fcNegZero | fcSubnormal)))
+        DemandedSrcMask |= fcAllFlags;
 
       // log(x < 0) = nan
       if (DemandedMask & fcNan)
@@ -3180,7 +3186,7 @@ Value *InstCombinerImpl::SimplifyDemandedUseFPClass(Instruction *I,
       if (DemandedMask & fcNegInf) {
         DemandedSrcMask |= fcZero;
 
-        // No value produces subnormal result.
+        // Subnormal inputs may be flushed to zero.
         if (Mode.inputsMayBeZero())
           DemandedSrcMask |= fcSubnormal;
       }
@@ -3197,7 +3203,8 @@ Value *InstCombinerImpl::SimplifyDemandedUseFPClass(Instruction *I,
                                   Depth + 1))
         return I;
 
-      Known = KnownFPClass::log(KnownSrc, Mode);
+      Known = KnownFPClass::log(KnownSrc, Mode,
+                                IsKnownNeverMultiUnitFPType);
       Known.knownNot(~DemandedMask);
 
       return simplifyDemandedFPClassResult(CI, FMF, DemandedMask, Known,

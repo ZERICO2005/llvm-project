@@ -5560,6 +5560,11 @@ void computeKnownFPClass(const Value *V, const APInt &DemandedElts,
       // log([+-]0.0) -> -inf
       // log(-inf) -> nan
       // log(-x) -> nan
+      if ((InterestedClasses & (fcNan | fcInf | fcZero | fcSubnormal)) ==
+          fcNone)
+        break;
+
+      KnownFPClass KnownSrc;
       if ((InterestedClasses & (fcNan | fcInf)) != fcNone) {
         FPClassTest InterestedSrcs = InterestedClasses;
         if ((InterestedClasses & fcNegInf) != fcNone)
@@ -5567,15 +5572,17 @@ void computeKnownFPClass(const Value *V, const APInt &DemandedElts,
         if ((InterestedClasses & fcNan) != fcNone)
           InterestedSrcs |= fcNan | fcNegative;
 
-        KnownFPClass KnownSrc;
         computeKnownFPClass(II->getArgOperand(0), DemandedElts, InterestedSrcs,
                             KnownSrc, Q, Depth + 1);
-
-        const Function *F = II->getFunction();
-        DenormalMode Mode = F ? F->getDenormalMode(EltTy->getFltSemantics())
-                              : DenormalMode::getDynamic();
-        Known = KnownFPClass::log(KnownSrc, Mode);
       }
+
+      const Function *F = II->getFunction();
+      DenormalMode Mode = F ? F->getDenormalMode(EltTy->getFltSemantics())
+                            : DenormalMode::getDynamic();
+      const bool IsKnownNeverMultiUnitFPType =
+          !V->getType()->getScalarType()->isMultiUnitFPType();
+
+      Known = KnownFPClass::log(KnownSrc, Mode, IsKnownNeverMultiUnitFPType);
 
       break;
     }

@@ -924,6 +924,56 @@ TEST_F(AArch64GISelMITest, TestFPClassFLogNegZero) {
   EXPECT_EQ(std::nullopt, Known.SignBit);
 }
 
+TEST_F(AArch64GISelMITest, TestFPClassFLogF128) {
+  StringRef MIRString = R"(
+    %val:_(f128) = G_IMPLICIT_DEF
+    %flog:_(f128) = G_FLOG %val
+    %copy_flog:_(f128) = COPY %flog
+)";
+
+  setUp(MIRString);
+  if (!TM)
+    GTEST_SKIP();
+
+  Register CopyReg = Copies.back();
+  MachineInstr *FinalCopy = MRI->getVRegDef(CopyReg);
+  Register SrcReg = FinalCopy->getOperand(1).getReg();
+
+  GISelValueTracking Info(*MF);
+  KnownFPClass Known = Info.computeKnownFPClass(SrcReg);
+
+  EXPECT_EQ(~(fcNegZero | fcSubnormal), Known.KnownFPClasses);
+  EXPECT_EQ(std::nullopt, Known.SignBit);
+}
+
+TEST_F(AArch64GISelMITest, TestFPClassFLogPPCF128) {
+  StringRef MIRString = R"(
+    %val:_(s128) = G_IMPLICIT_DEF
+    %flog:_(s128) = G_FLOG %val
+    %copy_flog:_(s128) = COPY %flog
+)";
+
+  setUp(MIRString);
+  if (!TM)
+    GTEST_SKIP();
+
+  Register CopyReg = Copies.back();
+  MachineInstr *FinalCopy = MRI->getVRegDef(CopyReg);
+  Register SrcReg = FinalCopy->getOperand(1).getReg();
+
+  // The MIR parser cannot spell a ppcf128 LLT.
+  MachineInstr *FLog = MRI->getVRegDef(SrcReg);
+  Register ValReg = FLog->getOperand(1).getReg();
+  MRI->setType(ValReg, LLT::ppcf128());
+  MRI->setType(SrcReg, LLT::ppcf128());
+
+  GISelValueTracking Info(*MF);
+  KnownFPClass Known = Info.computeKnownFPClass(SrcReg);
+
+  EXPECT_EQ(fcAllFlags, Known.KnownFPClasses);
+  EXPECT_EQ(std::nullopt, Known.SignBit);
+}
+
 TEST_F(AArch64GISelMITest, TestFPClassCopy) {
   StringRef MIRString = R"(
     %ptr:_(p0) = G_IMPLICIT_DEF

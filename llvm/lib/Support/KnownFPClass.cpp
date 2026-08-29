@@ -605,9 +605,13 @@ void KnownFPClass::propagateCanonicalizingSrc(const KnownFPClass &Src,
 }
 
 KnownFPClass KnownFPClass::log(const KnownFPClass &KnownSrc,
-                               DenormalMode Mode) {
+                               DenormalMode Mode,
+                               bool IsKnownNeverMultiUnitFPType) {
   KnownFPClass Known;
-  Known.knownNot(fcNegZero | fcSubnormal);
+  // PPCDoubleDouble can represent the exact value of 1.0 + subnormal, and
+  // log(1.0 + subnormal) = subnormal.
+  if (IsKnownNeverMultiUnitFPType)
+    Known.knownNot(fcNegZero | fcSubnormal);
 
   if (KnownSrc.isKnownNeverPosInfinity())
     Known.knownNot(fcPosInf);
