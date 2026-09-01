@@ -245,7 +245,14 @@ KnownFPClass KnownFPClass::bitcast(const fltSemantics &FltSemantics,
   else if (Bits.isNegative())
     Known.signBitMustBeOne();
 
-  if (APFloat::isIEEELikeFP(FltSemantics)) {
+  APFloatBase::Semantics FltType = APFloatBase::SemanticsToEnum(FltSemantics);
+
+  switch (FltType) {
+  case APFloatBase::S_IEEEhalf:
+  case APFloatBase::S_BFloat:
+  case APFloatBase::S_IEEEsingle:
+  case APFloatBase::S_IEEEdouble:
+  case APFloatBase::S_IEEEquad: {
     const unsigned MantissaBits = FltSemantics.precision - 1;
     const APInt ExponentMask = APInt::getBitsSet(
         FltSemantics.sizeInBits, MantissaBits, FltSemantics.sizeInBits - 1);
@@ -289,7 +296,10 @@ KnownFPClass KnownFPClass::bitcast(const fltSemantics &FltSemantics,
       Known.knownNot(fcSNan);
     else if (QuietBitKnownClear)
       Known.knownNot(fcQNan);
-  } else if (&FltSemantics == &APFloat::x87DoubleExtended()) {
+
+    break;
+  }
+  case APFloatBase::S_x87DoubleExtended: {
     // Layout of the x87 floating point type:
     // [0:62] fraction
     // [63] explicit integer bit
@@ -302,8 +312,7 @@ KnownFPClass KnownFPClass::bitcast(const fltSemantics &FltSemantics,
     const APInt FractionMask =
         APInt::getLowBitsSet(FltSemantics.sizeInBits, FractionBits);
     const APInt ExponentMask = APInt::getBitsSet(
-        FltSemantics.sizeInBits, FractionBits + 1,
-        FltSemantics.sizeInBits - 1);
+        FltSemantics.sizeInBits, FractionBits + 1, FltSemantics.sizeInBits - 1);
 
     const bool ExponentKnownAllZeros =
         (Bits.Zero & ExponentMask) == ExponentMask;
@@ -321,12 +330,15 @@ KnownFPClass KnownFPClass::bitcast(const fltSemantics &FltSemantics,
     if (ExponentKnownNotAllZeros || IntegerBitKnownSet)
       Known.knownNot(fcZero | fcSubnormal);
 
-    // infinity and NaN require an exponent with all one bits.
+    // Zero requires a zero fraction.
+    if (FractionKnownNotAllZeros)
+      Known.knownNot(fcZero);
+
+    // Infinity requires an exponent with all one bits, a set integer bit, and
+    // a zero fraction.
     if (ExponentKnownNotAllOnes || IntegerBitKnownClear ||
         FractionKnownNotAllZeros)
       Known.knownNot(fcInf);
-
-    // normal values have an exponent that is not all zeros or all ones.
 
     // A normal x87 value has its integer bit set. A zero exponent with that
     // bit set is the x87 pseudodenormal encoding, which APFloat treats as
@@ -343,20 +355,21 @@ KnownFPClass KnownFPClass::bitcast(const fltSemantics &FltSemantics,
     // if the value is a canonical normal or infinity.
     if (ExponentKnownAllZeros ||
         (IntegerBitKnownSet &&
-        (ExponentKnownNotAllOnes || FractionKnownAllZeros)))
+         (ExponentKnownNotAllOnes || FractionKnownAllZeros)))
       Known.knownNot(fcNan);
 
-    if (!Known.isKnownNeverNaN()) {
-      const bool SignalingBitKnownSet = Bits.One[FractionBits - 1];
-      const bool SignalingBitKnownClear = Bits.Zero[FractionBits - 1];
+    const bool QuietBitKnownSet = Bits.One[FractionBits - 1];
+    const bool QuietBitKnownClear = Bits.Zero[FractionBits - 1];
 
-      if (SignalingBitKnownSet)
-        Known.knownNot(fcSNan);
-      if (SignalingBitKnownClear)
-        Known.knownNot(fcQNan);
-    }
-  } else {
-    // memcmp
+    if (QuietBitKnownSet)
+      Known.knownNot(fcSNan);
+    else if (QuietBitKnownClear)
+      Known.knownNot(fcQNan);
+
+    break;
+  }
+  default:
+    break;
   }
 
   return Known;

@@ -34,6 +34,12 @@ static void expectConstant(const char *SemanticsName, const char *ValueName,
   EXPECT_EQ(Negative, Known.SignBit);
 }
 
+static APInt makeX87Bits(unsigned Exponent, bool IntegerBit,
+                         uint64_t Fraction) {
+  return (APInt(80, Exponent) << 64) | (APInt(80, IntegerBit) << 63) |
+         APInt(80, Fraction);
+}
+
 TEST(KnownFPClassTest, BitcastExhaustiveIEEEHalf) {
   const fltSemantics &Semantics = APFloat::IEEEhalf();
 
@@ -82,48 +88,89 @@ TEST(KnownFPClassTest, BitcastConstant) {
         SemanticsCase{"bfloat16", &APFloat::BFloat()},
         SemanticsCase{"ieee_binary32", &APFloat::IEEEsingle()},
         SemanticsCase{"ieee_binary64", &APFloat::IEEEdouble()},
-        SemanticsCase{"ieee_binary128", &APFloat::IEEEquad()}}) {
+        SemanticsCase{"ieee_binary128", &APFloat::IEEEquad()},
+        SemanticsCase{"x87float80", &APFloat::x87DoubleExtended()}}) {
     const fltSemantics &Semantics = *TestCase.Semantics;
     const unsigned BitWidth = Semantics.sizeInBits;
-    const unsigned MantissaBits = Semantics.precision - 1;
-    const APInt ExponentMask =
-        APInt::getBitsSet(BitWidth, MantissaBits, BitWidth - 1);
-    const APInt MantissaMask = APInt::getLowBitsSet(BitWidth, MantissaBits);
-    const APInt QuietBit = APInt::getOneBitSet(BitWidth, MantissaBits - 1);
+    const APInt AllOnesPayload = APInt::getAllOnes(BitWidth);
+    APFloat MaxSubnormal = APFloat::getSmallestNormalized(Semantics);
+    EXPECT_EQ(APFloat::opOK, MaxSubnormal.next(/*nextDown=*/true));
 
     for (bool Negative : {false, true}) {
-      expectConstant(TestCase.Name, "0.0", Semantics, APInt::getZero(BitWidth),
-                     fcPosZero, Negative);
-      expectConstant(TestCase.Name, "min_subnormal", Semantics,
-                     APInt(BitWidth, 1), fcPosSubnormal, Negative);
-      expectConstant(TestCase.Name, "max_subnormal", Semantics, MantissaMask,
-                     fcPosSubnormal, Negative);
-      expectConstant(TestCase.Name, "min_normal", Semantics,
-                     APInt::getOneBitSet(BitWidth, MantissaBits), fcPosNormal,
+      expectConstant(TestCase.Name, "0.0", Semantics,
+                     APFloat::getZero(Semantics).bitcastToAPInt(), fcPosZero,
                      Negative);
+      expectConstant(TestCase.Name, "min_subnormal", Semantics,
+                     APFloat::getSmallest(Semantics).bitcastToAPInt(),
+                     fcPosSubnormal, Negative);
+      expectConstant(TestCase.Name, "max_subnormal", Semantics,
+                     MaxSubnormal.bitcastToAPInt(), fcPosSubnormal, Negative);
+      expectConstant(TestCase.Name, "min_normal", Semantics,
+                     APFloat::getSmallestNormalized(Semantics).bitcastToAPInt(),
+                     fcPosNormal, Negative);
       expectConstant(TestCase.Name, "1.0", Semantics,
                      APFloat::getOne(Semantics).bitcastToAPInt(), fcPosNormal,
                      Negative);
       expectConstant(TestCase.Name, "max_normal", Semantics,
                      APFloat::getLargest(Semantics).bitcastToAPInt(),
                      fcPosNormal, Negative);
-      expectConstant(TestCase.Name, "inf", Semantics, ExponentMask, fcPosInf,
+      expectConstant(TestCase.Name, "inf", Semantics,
+                     APFloat::getInf(Semantics).bitcastToAPInt(), fcPosInf,
                      Negative);
 
       // An sNaN has a clear quiet bit and a non-zero payload.
       expectConstant(TestCase.Name, "snan_mostly_zero", Semantics,
-                     ExponentMask | APInt(BitWidth, 1), fcSNan, Negative);
+                     APFloat::getSNaN(Semantics).bitcastToAPInt(), fcSNan,
+                     Negative);
 
       // A qNaN has a set quiet bit. The remaining payload bits may be zero.
       expectConstant(TestCase.Name, "qnan_mostly_zero", Semantics,
-                     ExponentMask | QuietBit, fcQNan, Negative);
-
-      expectConstant(TestCase.Name, "snan_mostly_one", Semantics,
-                     ExponentMask | (MantissaMask & ~QuietBit), fcSNan,
+                     APFloat::getQNaN(Semantics).bitcastToAPInt(), fcQNan,
                      Negative);
-      expectConstant(TestCase.Name, "qnan_mostly_one", Semantics,
-                     ExponentMask | MantissaMask, fcQNan, Negative);
+
+      expectConstant(
+          TestCase.Name, "snan_mostly_one", Semantics,
+          APFloat::getSNaN(Semantics, false, &AllOnesPayload).bitcastToAPInt(),
+          fcSNan, Negative);
+      expectConstant(
+          TestCase.Name, "qnan_mostly_one", Semantics,
+          APFloat::getQNaN(Semantics, false, &AllOnesPayload).bitcastToAPInt(),
+          fcQNan, Negative);
     }
+  }
+}
+
+TEST(KnownFPClassTest, BitcastNonCanonicalX87) {
+  const fltSemantics &Semantics = APFloat::x87DoubleExtended();
+  constexpr uint64_t QuietBit = uint64_t(1) << 62;
+  constexpr unsigned ExponentMask = 0x7fff;
+
+  for (bool Negative : {false, true}) {
+    // An exponent of zero with a set integer bit is a pseudo-denormal. APFloat
+    // treats both the zero- and nonzero-fraction forms as normal.
+    expectConstant("x87float80", "pseudo_denormal_zero_fraction", Semantics,
+                   makeX87Bits(0, true, 0), fcPosNormal, Negative);
+    expectConstant("x87float80", "pseudo_denormal_nonzero_fraction", Semantics,
+                   makeX87Bits(0, true, QuietBit | 1), fcPosNormal, Negative);
+
+    // An all-ones exponent with a clear integer bit is a pseudo-infinity or
+    // pseudo-NaN. APFloat classifies both as NaNs using the usual quiet bit.
+    expectConstant("x87float80", "pseudo_infinity", Semantics,
+                   makeX87Bits(ExponentMask, false, 0), fcSNan, Negative);
+    expectConstant("x87float80", "pseudo_snan", Semantics,
+                   makeX87Bits(ExponentMask, false, 1), fcSNan, Negative);
+    expectConstant("x87float80", "pseudo_qnan", Semantics,
+                   makeX87Bits(ExponentMask, false, QuietBit), fcQNan,
+                   Negative);
+
+    // A nonzero, non-all-ones exponent with a clear integer bit is an
+    // unnormal. APFloat also classifies these using the quiet bit.
+    expectConstant("x87float80", "unnormal_zero_fraction", Semantics,
+                   makeX87Bits(1, false, 0), fcSNan, Negative);
+    expectConstant("x87float80", "unnormal_snan", Semantics,
+                   makeX87Bits(1, false, 1), fcSNan, Negative);
+    expectConstant("x87float80", "unnormal_qnan", Semantics,
+                   makeX87Bits(1, false, QuietBit), fcQNan, Negative);
   }
 }
 
