@@ -1348,7 +1348,15 @@ static bool isKnownExactFromRem(const BinaryOperator &Div,
     return false;
   };
 
-  return HasMatchingZeroRem(Div.getOperand(0));
+  // A matching remainder is a user of both operands. Scan the operand with
+  // fewer users, but ConstantData values do not have use-lists.
+  Value *Op0 = Div.getOperand(0);
+  Value *Op1 = Div.getOperand(1);
+  if (isa<ConstantData>(Op0))
+    return !isa<ConstantData>(Op1) && HasMatchingZeroRem(Op1);
+  if (isa<ConstantData>(Op1))
+    return HasMatchingZeroRem(Op0);
+  return HasMatchingZeroRem(Op0->getNumUses() < Op1->getNumUses() ? Op0 : Op1);
 }
 
 /// Common integer divide/remainder transforms

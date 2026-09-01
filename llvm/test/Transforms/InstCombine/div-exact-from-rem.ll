@@ -255,3 +255,67 @@ define i32 @div_exact_3(i32 %x) {
   %quot = udiv i32 %x, 3
   ret i32 %quot
 }
+
+define i32 @udiv_constant_dividend(i32 %x) {
+; CHECK-LABEL: define i32 @udiv_constant_dividend(
+; CHECK-SAME: i32 [[X:%.*]]) {
+; CHECK-NEXT:  [[ENTRY:.*:]]
+; CHECK-NEXT:    [[REM:%.*]] = urem i32 42, [[X]]
+; CHECK-NEXT:    [[IS_ZERO:%.*]] = icmp eq i32 [[REM]], 0
+; CHECK-NEXT:    br i1 [[IS_ZERO]], label %[[DIV:.*]], label %[[EXIT:.*]]
+; CHECK:       [[DIV]]:
+; CHECK-NEXT:    [[QUOT:%.*]] = udiv exact i32 42, [[X]]
+; CHECK-NEXT:    ret i32 [[QUOT]]
+; CHECK:       [[EXIT]]:
+; CHECK-NEXT:    ret i32 0
+;
+entry:
+  %rem = urem i32 42, %x
+  %is.zero = icmp eq i32 %rem, 0
+  br i1 %is.zero, label %div, label %exit
+
+div:
+  %quot = udiv i32 42, %x
+  ret i32 %quot
+
+exit:
+  ret i32 0
+}
+
+define i32 @sdiv_constant_dividend(i32 %x) {
+; CHECK-LABEL: define i32 @sdiv_constant_dividend(
+; CHECK-SAME: i32 [[X:%.*]]) {
+; CHECK-NEXT:  [[ENTRY:.*:]]
+; CHECK-NEXT:    [[REM:%.*]] = srem i32 42, [[X]]
+; CHECK-NEXT:    [[IS_ZERO:%.*]] = icmp eq i32 [[REM]], 0
+; CHECK-NEXT:    br i1 [[IS_ZERO]], label %[[DIV:.*]], label %[[EXIT:.*]]
+; CHECK:       [[DIV]]:
+; CHECK-NEXT:    [[QUOT:%.*]] = sdiv exact i32 42, [[X]]
+; CHECK-NEXT:    ret i32 [[QUOT]]
+; CHECK:       [[EXIT]]:
+; CHECK-NEXT:    ret i32 0
+;
+entry:
+  %rem = srem i32 42, %x
+  %is.zero = icmp eq i32 %rem, 0
+  br i1 %is.zero, label %div, label %exit
+
+div:
+  %quot = sdiv i32 42, %x
+  ret i32 %quot
+
+exit:
+  ret i32 0
+}
+
+define <2 x i32> @udiv_constant_vector_dividend(<2 x i32> %x) {
+; CHECK-LABEL: define <2 x i32> @udiv_constant_vector_dividend(
+; CHECK-SAME: <2 x i32> [[X:%.*]]) {
+; CHECK-NEXT:    [[REM:%.*]] = urem <2 x i32> <i32 42, i32 42>, [[X]]
+; CHECK-NEXT:    [[QUOT:%.*]] = udiv <2 x i32> <i32 42, i32 42>, [[X]]
+; CHECK-NEXT:    ret <2 x i32> [[QUOT]]
+;
+  %rem = urem <2 x i32> <i32 42, i32 42>, %x
+  %quot = udiv <2 x i32> <i32 42, i32 42>, %x
+  ret <2 x i32> %quot
+}
