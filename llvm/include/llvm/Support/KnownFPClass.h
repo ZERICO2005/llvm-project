@@ -479,6 +479,11 @@ struct KnownFPClass {
                                                bool IsTrunc,
                                                bool IsMultiUnitFPType);
 
+  /// Propagate known class for the fractional component of modf.
+  LLVM_ABI static KnownFPClass
+  modf_frac(const KnownFPClass &Src,
+            DenormalMode Mode = DenormalMode::getDynamic());
+
   /// Propagate known class for mantissa component of frexp
   LLVM_ABI static KnownFPClass
   frexp_mant(const KnownFPClass &Src,

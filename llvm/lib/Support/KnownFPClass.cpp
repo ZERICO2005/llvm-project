@@ -869,6 +869,42 @@ KnownFPClass KnownFPClass::roundToIntegral(const KnownFPClass &KnownSrc,
   return Known;
 }
 
+KnownFPClass KnownFPClass::modf_frac(const KnownFPClass &KnownSrc,
+                                     DenormalMode Mode) {
+  KnownFPClass Known;
+
+  // modf(x, ptr) returns a value in [-1.0, +1.0] or NaN.
+  Known.knownNot(fcInf);
+
+  Known.propagateNonNaN(KnownSrc);
+
+  if (KnownSrc.isKnownNever(fcPosNormal))
+    Known.knownNot(fcPosNormal);
+  if (KnownSrc.isKnownNever(fcNegNormal))
+    Known.knownNot(fcNegNormal);
+
+  // A subnormal fractional component requires a subnormal input.
+  if (KnownSrc.isKnownNever(fcNegSubnormal))
+    Known.knownNot(fcNegSubnormal);
+  if (KnownSrc.isKnownNever(fcPosSubnormal))
+    Known.knownNot(fcPosSubnormal);
+
+  // The fractional component has the same sign as the input. A negative
+  // subnormal input or result may be flushed to positive zero.
+  if (KnownSrc.isKnownNever(fcNegInf | fcNegNormal) &&
+      KnownSrc.isKnownNeverLogicalNegZero(Mode))
+    Known.knownNot(fcNegZero);
+
+  if (KnownSrc.isKnownNever(fcPosInf | fcPosNormal) &&
+      KnownSrc.isKnownNeverLogicalPosZero(Mode)) {
+    // A negative subnormal result may flush to positive zero.
+    if (Known.isKnownNever(fcNegSubnormal) || !Mode.outputsMayBePositiveZero())
+      Known.knownNot(fcPosZero);
+  }
+
+  return Known;
+}
+
 KnownFPClass KnownFPClass::frexp_mant(const KnownFPClass &KnownSrc,
                                       DenormalMode Mode) {
   KnownFPClass Known;

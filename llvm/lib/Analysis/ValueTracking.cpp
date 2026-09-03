@@ -6240,6 +6240,20 @@ void computeKnownFPClass(const Value *V, const APInt &DemandedElts,
           Known = KnownFPClass::frexp_mant(KnownSrc, Mode);
           return;
         }
+        case Intrinsic::modf: {
+          // TODO: Handle the integral result.
+          KnownFPClass KnownSrc;
+          computeKnownFPClass(II->getArgOperand(0), DemandedElts,
+                              InterestedClasses, KnownSrc, Q, Depth + 1);
+
+          const Function *F = Extract->getFunction();
+          const fltSemantics &FltSem =
+              Extract->getType()->getScalarType()->getFltSemantics();
+          DenormalMode Mode =
+              F ? F->getDenormalMode(FltSem) : DenormalMode::getDynamic();
+          Known = KnownFPClass::modf_frac(KnownSrc, Mode);
+          return;
+        }
         default:
           break;
         }

@@ -1921,6 +1921,19 @@ void GISelValueTracking::computeKnownFPClass(Register R,
     Known = KnownFPClass::frexp_mant(KnownSrc, Mode);
     break;
   }
+  case TargetOpcode::G_FMODF: {
+    // TODO: Handle the integral result.
+    if (R != MI.getOperand(0).getReg())
+      break;
+    Register Src = MI.getOperand(2).getReg();
+    KnownFPClass KnownSrc;
+    computeKnownFPClass(Src, DemandedElts, InterestedClasses, KnownSrc,
+                        Depth + 1);
+    DenormalMode Mode =
+        MF->getDenormalMode(getFltSemanticForLLT(DstTy.getScalarType()));
+    Known = KnownFPClass::modf_frac(KnownSrc, Mode);
+    break;
+  }
   case TargetOpcode::G_FPEXT: {
     Register Src = MI.getOperand(1).getReg();
     KnownFPClass KnownSrc;
