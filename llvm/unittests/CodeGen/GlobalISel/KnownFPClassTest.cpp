@@ -1358,6 +1358,51 @@ TEST_F(AArch64GISelMITest, TestFPClassFRemSelf_KnownFiniteNonZero) {
   EXPECT_EQ(fcZero, Known.getKnownFPClasses());
 }
 
+TEST_F(AArch64GISelMITest, TestFPClassFModfFrac) {
+  StringRef MIRString = R"(
+    %ptr:_(p0) = G_IMPLICIT_DEF
+    %val:_(s32) = G_LOAD %ptr(p0) :: (load (s32))
+    %frac:_(s32), %integral:_(s32) = G_FMODF %val
+    %copy:_(s32) = COPY %frac
+)";
+
+  setUp(MIRString);
+  if (!TM)
+    GTEST_SKIP();
+
+  Register CopyReg = Copies.back();
+  MachineInstr *FinalCopy = MRI->getVRegDef(CopyReg);
+  Register SrcReg = FinalCopy->getOperand(1).getReg();
+
+  GISelValueTracking Info(*MF);
+  KnownFPClass Known = Info.computeKnownFPClass(SrcReg);
+
+  EXPECT_EQ(fcAllFlags & ~fcInf, Known.getKnownFPClasses());
+  EXPECT_EQ(std::nullopt, Known.getSignBit());
+}
+
+TEST_F(AArch64GISelMITest, TestFPClassFModfFracPositiveNormal) {
+  StringRef MIRString = R"(
+    %positive:_(s32) = G_FCONSTANT float 0.5
+    %frac:_(s32), %integral:_(s32) = G_FMODF %positive
+    %copy:_(s32) = COPY %frac
+)";
+
+  setUp(MIRString);
+  if (!TM)
+    GTEST_SKIP();
+
+  Register CopyReg = Copies.back();
+  MachineInstr *FinalCopy = MRI->getVRegDef(CopyReg);
+  Register SrcReg = FinalCopy->getOperand(1).getReg();
+
+  GISelValueTracking Info(*MF);
+  KnownFPClass Known = Info.computeKnownFPClass(SrcReg);
+
+  EXPECT_EQ(fcPosZero | fcPosNormal, Known.getKnownFPClasses());
+  EXPECT_EQ(false, Known.getSignBit());
+}
+
 TEST_F(AArch64GISelMITest, TestFPClassShuffleVec) {
   StringRef MIRString = R"(
     %ptr:_(p0) = G_IMPLICIT_DEF
