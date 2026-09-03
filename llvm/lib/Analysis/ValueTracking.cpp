@@ -5534,9 +5534,22 @@ void computeKnownFPClass(const Value *V, const APInt &DemandedElts,
       const bool IsKnownNeverMultiUnitFPType =
           !V->getType()->getScalarType()->isMultiUnitFPType();
 
-      const bool IsTrunc = IID == Intrinsic::trunc;
-      Known = KnownFPClass::roundToIntegral(KnownSrc, IsTrunc,
-                                            IsKnownNeverMultiUnitFPType, Mode);
+      switch (IID) {
+      case Intrinsic::trunc:
+        Known = KnownFPClass::trunc(KnownSrc, Mode);
+        break;
+      case Intrinsic::floor:
+        Known =
+            KnownFPClass::floor(KnownSrc, IsKnownNeverMultiUnitFPType, Mode);
+        break;
+      case Intrinsic::ceil:
+        Known = KnownFPClass::ceil(KnownSrc, IsKnownNeverMultiUnitFPType, Mode);
+        break;
+      default:
+        Known = KnownFPClass::roundToIntegral(
+            KnownSrc, IsKnownNeverMultiUnitFPType, Mode);
+        break;
+      }
       break;
     }
     case Intrinsic::exp:

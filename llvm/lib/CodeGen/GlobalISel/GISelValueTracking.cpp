@@ -1610,9 +1610,21 @@ void GISelValueTracking::computeKnownFPClass(Register R,
     const bool IsKnownNeverMultiUnitFPType =
         &FltSem != &APFloat::PPCDoubleDouble();
 
-    const bool IsTrunc = Opcode == TargetOpcode::G_INTRINSIC_TRUNC;
-    Known = KnownFPClass::roundToIntegral(KnownSrc, IsTrunc,
-                                          IsKnownNeverMultiUnitFPType, Mode);
+    switch (Opcode) {
+    case TargetOpcode::G_INTRINSIC_TRUNC:
+      Known = KnownFPClass::trunc(KnownSrc, Mode);
+      break;
+    case TargetOpcode::G_FFLOOR:
+      Known = KnownFPClass::floor(KnownSrc, IsKnownNeverMultiUnitFPType, Mode);
+      break;
+    case TargetOpcode::G_FCEIL:
+      Known = KnownFPClass::ceil(KnownSrc, IsKnownNeverMultiUnitFPType, Mode);
+      break;
+    default:
+      Known = KnownFPClass::roundToIntegral(KnownSrc,
+                                            IsKnownNeverMultiUnitFPType, Mode);
+      break;
+    }
     break;
   }
   case TargetOpcode::G_FEXP:
