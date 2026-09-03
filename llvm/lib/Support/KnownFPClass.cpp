@@ -795,12 +795,28 @@ KnownFPClass KnownFPClass::atan2(const KnownFPClass &KnownY,
   Known.propagateNonNaN(KnownY, KnownX);
 
   // Negative subnormals could be treated like positive zero.
-  const bool XCannotHavePositiveValue = KnownX.isKnownNever(fcPositive) &&
-                                        KnownX.isKnownNeverLogicalPosZero(Mode);
+  const bool XCannotHavePositiveInput = KnownX.cannotHavePositiveInput(Mode);
+  const bool YCannotHavePositiveInput = KnownY.cannotHavePositiveInput(Mode);
+
+  const bool YCannotHaveNegativeInput = KnownY.cannotHaveNegativeInput();
 
   // If x <= -0.0, then |atan2(y, x)| >= pi/2
-  if (XCannotHavePositiveValue)
+  if (XCannotHavePositiveInput)
     Known.knownNot(fcZero | fcSubnormal);
+
+  // If y >= +0.0, then atan2(y, x) >= +0.0
+  if (YCannotHaveNegativeInput)
+    Known.knownNot(fcNegative);
+
+  // If y <= -0.0, then atan2(y, x) <= -0.0
+  // We do this deduction last in case we were able to rule out a negative
+  // subnormal result earlier.
+  if (YCannotHavePositiveInput) {
+    Known.knownNot(fcPosSubnormal | fcPosNormal | fcPosInf);
+    // Negative subnormal results can flush to +0.0.
+    if (Known.isKnownNever(fcNegSubnormal) || !Mode.outputsMayBePositiveZero())
+      Known.knownNot(fcPosZero);
+  }
 
   return Known;
 }
