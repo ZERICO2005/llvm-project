@@ -337,7 +337,69 @@ KnownBits KnownFPClass::toKnownBits(const fltSemantics &FltSemantics) const {
   if (!IsSupported(FltSemantics))
     return Known;
 
-  if (isKnownNever(fcNormal | fcSubnormal | fcNan)) {
+  switch (APFloat::SemanticsToEnum(FltSemantics)) {
+  case APFloatBase::S_IEEEhalf:
+  case APFloatBase::S_BFloat:
+  case APFloatBase::S_IEEEsingle:
+  case APFloatBase::S_IEEEdouble:
+  case APFloatBase::S_IEEEquad: {
+    // For ieee types, we cannot deduce anything if the source could be normal.
+    if (FPClasses & fcNormal)
+      break;
+
+    Known.setAllConflict();
+
+    const unsigned BitWidth = FltSemantics.sizeInBits;
+    const unsigned MantissaBits = FltSemantics.precision - 1;
+    const unsigned ExponentBits = BitWidth - MantissaBits - 1;
+
+    APInt MantissaMask = APInt::getLowBitsSet(BitWidth, MantissaBits);
+    APInt ExponentMask =
+        APInt::getBitsSet(BitWidth, MantissaBits, MantissaBits + ExponentBits);
+    const unsigned ExponentMSB = MantissaBits + ExponentBits - 1;
+    APInt ExponentOneMask = ExponentMask;
+    ExponentOneMask.clearBit(ExponentMSB);
+
+    const unsigned QuietBitIndex = MantissaBits - 1;
+    APInt PayloadMask = MantissaMask;
+    PayloadMask.clearBit(QuietBitIndex);
+
+    if (FPClasses & fcNan) {
+      // No individual payload bit is known.
+      Known.Zero &= ~PayloadMask;
+      Known.One &= ~PayloadMask;
+
+      if (FPClasses & fcQNan)
+        Known.Zero.clearBit(QuietBitIndex);
+
+      if (FPClasses & fcSNan)
+        Known.One.clearBit(QuietBitIndex);
+    }
+    if (FPClasses & fcInf) {
+      // Exponent bits cannot be zeros.
+      Known.Zero &= ~ExponentMask;
+      // Mantissa bits cannot be ones.
+      Known.One &= ~MantissaMask;
+    }
+    if (FPClasses & fcSubnormal) {
+      // Exponent bits cannot be ones.
+      Known.One &= ~ExponentMask;
+      // Unknown mantissa.
+      Known.One &= ~MantissaMask;
+      Known.Zero &= ~MantissaMask;
+    }
+    if (FPClasses & fcZero) {
+      // Exponent bits cannot be ones.
+      Known.One &= ~ExponentMask;
+      // Mantissa cannot be ones.
+      Known.One &= ~MantissaMask;
+    }
+    break;
+  }
+  case APFloatBase::S_x87DoubleExtended: {
+    if (!isKnownNever(fcNormal | fcSubnormal | fcNan))
+      break;
+
     Known.setAllConflict();
 
     if (FPClasses & fcInf)
@@ -350,6 +412,11 @@ KnownBits KnownFPClass::toKnownBits(const fltSemantics &FltSemantics) const {
 
     Known.Zero.clearSignBit();
     Known.One.clearSignBit();
+
+    break;
+  }
+  default:
+    llvm_unreachable("unhandled supported semantics");
   }
 
   if (std::optional<bool> Sign = getSignBit()) {
