@@ -5131,25 +5131,6 @@ static void computeKnownFPClassForFPTrunc(const Operator *Op,
   Known = KnownFPClass::fptrunc(KnownSrc);
 }
 
-static constexpr KnownFPClass::MinMaxKind getMinMaxKind(Intrinsic::ID IID) {
-  switch (IID) {
-  case Intrinsic::minimum:
-    return KnownFPClass::MinMaxKind::minimum;
-  case Intrinsic::maximum:
-    return KnownFPClass::MinMaxKind::maximum;
-  case Intrinsic::minimumnum:
-    return KnownFPClass::MinMaxKind::minimumnum;
-  case Intrinsic::maximumnum:
-    return KnownFPClass::MinMaxKind::maximumnum;
-  case Intrinsic::minnum:
-    return KnownFPClass::MinMaxKind::minnum;
-  case Intrinsic::maxnum:
-    return KnownFPClass::MinMaxKind::maxnum;
-  default:
-    llvm_unreachable("not a floating-point min-max intrinsic");
-  }
-}
-
 /// \return true if this is a floating point value that is known to have a
 /// magnitude smaller than 1. i.e., fabs(X) <= 1.0 or is nan.
 static bool isAbsoluteValueULEOne(const Value *V) {
@@ -5540,8 +5521,28 @@ void computeKnownFPClass(const Value *V, const APInt &DemandedElts,
                   II->getType()->getScalarType()->getFltSemantics())
             : DenormalMode::getDynamic();
 
-      Known = KnownFPClass::minMaxLike(KnownLHS, KnownRHS, getMinMaxKind(IID),
-                                       Mode);
+      switch (IID) {
+      case Intrinsic::minimum:
+        Known = KnownFPClass::minimum(KnownLHS, KnownRHS, Mode);
+        break;
+      case Intrinsic::maximum:
+        Known = KnownFPClass::maximum(KnownLHS, KnownRHS, Mode);
+        break;
+      case Intrinsic::minimumnum:
+        Known = KnownFPClass::minimumnum(KnownLHS, KnownRHS, Mode);
+        break;
+      case Intrinsic::maximumnum:
+        Known = KnownFPClass::maximumnum(KnownLHS, KnownRHS, Mode);
+        break;
+      case Intrinsic::minnum:
+        Known = KnownFPClass::minnum(KnownLHS, KnownRHS, Mode);
+        break;
+      case Intrinsic::maxnum:
+        Known = KnownFPClass::maxnum(KnownLHS, KnownRHS, Mode);
+        break;
+      default:
+        llvm_unreachable("not a floating-point min-max intrinsic");
+      }
       break;
     }
     case Intrinsic::canonicalize: {

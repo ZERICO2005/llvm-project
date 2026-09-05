@@ -94,9 +94,19 @@ void KnownFPClass::propagateDenormal(const KnownFPClass &Src,
   }
 }
 
-KnownFPClass KnownFPClass::minMaxLike(const KnownFPClass &LHS_,
-                                      const KnownFPClass &RHS_, MinMaxKind Kind,
-                                      DenormalMode Mode) {
+// Enum of min/max intrinsics to avoid dependency on IR.
+enum class MinMaxKind {
+  minimum,
+  maximum,
+  minimumnum,
+  maximumnum,
+  minnum,
+  maxnum
+};
+
+static KnownFPClass minMaxLike(const KnownFPClass &LHS_,
+                               const KnownFPClass &RHS_, MinMaxKind Kind,
+                               DenormalMode Mode) {
   KnownFPClass KnownLHS = LHS_;
   KnownFPClass KnownRHS = RHS_;
 
@@ -172,6 +182,44 @@ KnownFPClass KnownFPClass::minMaxLike(const KnownFPClass &LHS_,
     Known.setSignBit(std::nullopt);
   }
 
+  return Known;
+}
+
+KnownFPClass KnownFPClass::minimum(const KnownFPClass &LHS,
+                                   const KnownFPClass &RHS, DenormalMode Mode) {
+  KnownFPClass Known = minMaxLike(LHS, RHS, MinMaxKind::minimum, Mode);
+  return Known;
+}
+
+KnownFPClass KnownFPClass::maximum(const KnownFPClass &LHS,
+                                   const KnownFPClass &RHS, DenormalMode Mode) {
+  KnownFPClass Known = minMaxLike(LHS, RHS, MinMaxKind::maximum, Mode);
+  return Known;
+}
+
+KnownFPClass KnownFPClass::minimumnum(const KnownFPClass &LHS,
+                                      const KnownFPClass &RHS,
+                                      DenormalMode Mode) {
+  KnownFPClass Known = minMaxLike(LHS, RHS, MinMaxKind::minimumnum, Mode);
+  return Known;
+}
+
+KnownFPClass KnownFPClass::maximumnum(const KnownFPClass &LHS,
+                                      const KnownFPClass &RHS,
+                                      DenormalMode Mode) {
+  KnownFPClass Known = minMaxLike(LHS, RHS, MinMaxKind::maximumnum, Mode);
+  return Known;
+}
+
+KnownFPClass KnownFPClass::minnum(const KnownFPClass &LHS,
+                                  const KnownFPClass &RHS, DenormalMode Mode) {
+  KnownFPClass Known = minMaxLike(LHS, RHS, MinMaxKind::minnum, Mode);
+  return Known;
+}
+
+KnownFPClass KnownFPClass::maxnum(const KnownFPClass &LHS,
+                                  const KnownFPClass &RHS, DenormalMode Mode) {
+  KnownFPClass Known = minMaxLike(LHS, RHS, MinMaxKind::maxnum, Mode);
   return Known;
 }
 

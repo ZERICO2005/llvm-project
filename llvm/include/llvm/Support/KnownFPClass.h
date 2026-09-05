@@ -229,19 +229,29 @@ struct KnownFPClass {
     return Known;
   }
 
-  // Enum of min/max intrinsics to avoid dependency on IR.
-  enum class MinMaxKind {
-    minimum,
-    maximum,
-    minimumnum,
-    maximumnum,
-    minnum,
-    maxnum
-  };
+  LLVM_ABI static KnownFPClass
+  minimum(const KnownFPClass &LHS, const KnownFPClass &RHS,
+          DenormalMode DenormMode = DenormalMode::getDynamic());
 
   LLVM_ABI static KnownFPClass
-  minMaxLike(const KnownFPClass &LHS, const KnownFPClass &RHS, MinMaxKind Kind,
+  maximum(const KnownFPClass &LHS, const KnownFPClass &RHS,
+          DenormalMode DenormMode = DenormalMode::getDynamic());
+
+  LLVM_ABI static KnownFPClass
+  minimumnum(const KnownFPClass &LHS, const KnownFPClass &RHS,
              DenormalMode DenormMode = DenormalMode::getDynamic());
+
+  LLVM_ABI static KnownFPClass
+  maximumnum(const KnownFPClass &LHS, const KnownFPClass &RHS,
+             DenormalMode DenormMode = DenormalMode::getDynamic());
+
+  LLVM_ABI static KnownFPClass
+  minnum(const KnownFPClass &LHS, const KnownFPClass &RHS,
+         DenormalMode DenormMode = DenormalMode::getDynamic());
+
+  LLVM_ABI static KnownFPClass
+  maxnum(const KnownFPClass &LHS, const KnownFPClass &RHS,
+         DenormalMode DenormMode = DenormalMode::getDynamic());
 
   /// Apply the canonicalize intrinsic to this value. This is essentially a
   /// stronger form of propagateCanonicalizingSrc.

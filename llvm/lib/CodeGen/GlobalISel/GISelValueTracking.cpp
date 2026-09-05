@@ -1516,35 +1516,33 @@ void GISelValueTracking::computeKnownFPClass(Register R,
     computeKnownFPClass(RHS, DemandedElts, InterestedClasses, KnownRHS,
                         Depth + 1);
 
-    KnownFPClass::MinMaxKind Kind;
+    DenormalMode Mode =
+        MF->getDenormalMode(getFltSemanticForLLT(DstTy.getScalarType()));
     switch (Opcode) {
     case TargetOpcode::G_FMINIMUM:
-      Kind = KnownFPClass::MinMaxKind::minimum;
+      Known = KnownFPClass::minimum(KnownLHS, KnownRHS, Mode);
       break;
     case TargetOpcode::G_FMAXIMUM:
-      Kind = KnownFPClass::MinMaxKind::maximum;
+      Known = KnownFPClass::maximum(KnownLHS, KnownRHS, Mode);
       break;
     case TargetOpcode::G_FMINIMUMNUM:
-      Kind = KnownFPClass::MinMaxKind::minimumnum;
+      Known = KnownFPClass::minimumnum(KnownLHS, KnownRHS, Mode);
       break;
     case TargetOpcode::G_FMAXIMUMNUM:
-      Kind = KnownFPClass::MinMaxKind::maximumnum;
+      Known = KnownFPClass::maximumnum(KnownLHS, KnownRHS, Mode);
       break;
     case TargetOpcode::G_FMINNUM:
     case TargetOpcode::G_FMINNUM_IEEE:
-      Kind = KnownFPClass::MinMaxKind::minnum;
+      Known = KnownFPClass::minnum(KnownLHS, KnownRHS, Mode);
       break;
     case TargetOpcode::G_FMAXNUM:
     case TargetOpcode::G_FMAXNUM_IEEE:
-      Kind = KnownFPClass::MinMaxKind::maxnum;
+      Known = KnownFPClass::maxnum(KnownLHS, KnownRHS, Mode);
       break;
     default:
       llvm_unreachable("unhandled min/max opcode");
     }
 
-    DenormalMode Mode =
-        MF->getDenormalMode(getFltSemanticForLLT(DstTy.getScalarType()));
-    Known = KnownFPClass::minMaxLike(KnownLHS, KnownRHS, Kind, Mode);
     break;
   }
   case TargetOpcode::G_FCANONICALIZE: {
