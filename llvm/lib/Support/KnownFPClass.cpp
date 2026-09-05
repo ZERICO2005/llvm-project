@@ -397,23 +397,69 @@ KnownBits KnownFPClass::toKnownBits(const fltSemantics &FltSemantics) const {
     break;
   }
   case APFloatBase::S_x87DoubleExtended: {
-    if (!isKnownNever(fcNormal | fcSubnormal | fcNan))
-      break;
+    constexpr unsigned BitWidth = 80;
+    constexpr unsigned FractionBits = 63;
+    constexpr unsigned IntegerBitIndex = FractionBits;
+    constexpr unsigned QuietBitIndex = FractionBits - 1;
+
+    APInt FractionMask = APInt::getLowBitsSet(BitWidth, FractionBits);
+    // Includes the integer bit
+    APInt ExponentMask =
+        APInt::getBitsSet(BitWidth, FractionBits + 0, BitWidth - 1);
+    APInt PayloadMask = APInt::getLowBitsSet(BitWidth, QuietBitIndex);
 
     Known.setAllConflict();
 
-    if (FPClasses & fcInf)
-      Known = Known.intersectWith(KnownBits::makeConstant(
-          APFloat::getInf(FltSemantics).bitcastToAPInt()));
+    if (FPClasses & fcNormal) {
+      // Normal values, including pseudo-denormals, have a set explicit integer
+      // bit.
+      Known.resetAll();
+      Known.One.setBit(IntegerBitIndex);
+    }
 
-    if (FPClasses & fcZero)
-      Known = Known.intersectWith(
-          KnownBits::makeConstant(APInt::getZero(FltSemantics.sizeInBits)));
+    if (FPClasses & fcInf) {
+      // Infinity has an all-ones exponent.
+      // The explicit integer bit is one.
+      Known.Zero &= ~ExponentMask;
+      Known.One.setBit(IntegerBitIndex);
+      // Fraction bits are zero.
+      Known.One &= ~FractionMask;
+    }
+
+    if (FPClasses & fcZero) {
+      // Zero has an all-zeros exponent and significand.
+      Known.One &= ~ExponentMask;
+      Known.One &= ~FractionMask;
+    }
+
+    if (FPClasses & fcSubnormal) {
+      // Subnormals have an all-zeros exponent and explicit integer bit.
+      Known.One &= ~ExponentMask;
+
+      // At least one fraction bit is non-zero, but no individual bit is known.
+      Known.Zero &= ~FractionMask;
+      Known.One &= ~FractionMask;
+    }
+
+    if (FPClasses & fcNan) {
+      // x87 has pseudo-NaNs and unnnormal encodings, so a NaN does not
+      // necessarily have an all-ones exponent or a set integer bit.
+      Known.Zero &= ~ExponentMask;
+      Known.One &= ~ExponentMask;
+
+      // No individual payload bit is known.
+      Known.Zero &= ~PayloadMask;
+      Known.One &= ~PayloadMask;
+
+      if (FPClasses & fcQNan)
+        Known.Zero.clearBit(QuietBitIndex);
+
+      if (FPClasses & fcSNan)
+        Known.One.clearBit(QuietBitIndex);
+    }
 
     Known.Zero.clearSignBit();
     Known.One.clearSignBit();
-
-    break;
   }
   default:
     llvm_unreachable("unhandled supported semantics");
