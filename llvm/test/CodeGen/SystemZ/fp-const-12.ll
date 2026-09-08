@@ -65,7 +65,7 @@ define float @f10() {
 define float @f11() {
 ; CHECK-LABEL: f11:
 ; CHECK: vgbm %v0, 61440
-  ret float 0xFFFFFFFFE0000000
+  ret float -nan(0x3FFFFF)
 }
 
 define double @f12() {

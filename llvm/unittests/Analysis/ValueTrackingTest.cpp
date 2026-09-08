@@ -3459,7 +3459,7 @@ const std::pair<const char *, const char *> IsBytewiseValueTests[] = {
     },
     {
         "i8 -1",
-        "float 0xFFFFFFFFE0000000",
+        "float -nan(0x3FFFFF)",
     },
     {
         "i8 0",
