@@ -167,8 +167,8 @@ define i32 @ret_udiv_exact_uintmax_from_zero_remainder(i32 %x) {
 
 ; Signed division with a constant RHS.
 
-define i32 @ret_sdiv_exact_3_from_zero_remainder(i32 %x) {
-; CHECK-LABEL: define i32 @ret_sdiv_exact_3_from_zero_remainder(
+define i32 @ret_sdiv_exact_pos_3_from_rem_pos_3_is_zero(i32 %x) {
+; CHECK-LABEL: define i32 @ret_sdiv_exact_pos_3_from_rem_pos_3_is_zero(
 ; CHECK-SAME: i32 [[X:%.*]]) {
 ; CHECK-NEXT:    [[REM:%.*]] = srem i32 [[X]], 3
 ; CHECK-NEXT:    [[IS_ZERO:%.*]] = icmp eq i32 [[REM]], 0
@@ -183,8 +183,8 @@ define i32 @ret_sdiv_exact_3_from_zero_remainder(i32 %x) {
   ret i32 %quot
 }
 
-define i32 @ret_sdiv_exact_3_from_zero_remainder_unreachable(i32 %x) {
-; CHECK-LABEL: define i32 @ret_sdiv_exact_3_from_zero_remainder_unreachable(
+define i32 @ret_sdiv_exact_pos_3_from_rem_pos_3_is_zero_unreachable(i32 %x) {
+; CHECK-LABEL: define i32 @ret_sdiv_exact_pos_3_from_rem_pos_3_is_zero_unreachable(
 ; CHECK-SAME: i32 [[X:%.*]]) {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
 ; CHECK-NEXT:    [[REM:%.*]] = srem i32 [[X]], 3
@@ -209,19 +209,44 @@ div:
   ret i32 %quot
 }
 
-; TODO: A zero remainder modulo -3 also makes division by -3 exact.
 define i32 @ret_sdiv_exact_neg_3_from_rem_neg_3_is_zero(i32 %x) {
 ; CHECK-LABEL: define i32 @ret_sdiv_exact_neg_3_from_rem_neg_3_is_zero(
 ; CHECK-SAME: i32 [[X:%.*]]) {
 ; CHECK-NEXT:    [[REM:%.*]] = srem i32 [[X]], 3
 ; CHECK-NEXT:    [[IS_ZERO:%.*]] = icmp eq i32 [[REM]], 0
 ; CHECK-NEXT:    call void @llvm.assume(i1 [[IS_ZERO]])
-; CHECK-NEXT:    [[QUOT:%.*]] = sdiv i32 [[X]], -3
+; CHECK-NEXT:    [[QUOT:%.*]] = sdiv exact i32 [[X]], -3
 ; CHECK-NEXT:    ret i32 [[QUOT]]
 ;
   %rem = srem i32 %x, -3
   %is.zero = icmp eq i32 %rem, 0
   call void @llvm.assume(i1 %is.zero)
+  %quot = sdiv i32 %x, -3
+  ret i32 %quot
+}
+
+define i32 @ret_sdiv_exact_neg_3_from_rem_neg_3_is_zero_unreachable(i32 %x) {
+; CHECK-LABEL: define i32 @ret_sdiv_exact_neg_3_from_rem_neg_3_is_zero_unreachable(
+; CHECK-SAME: i32 [[X:%.*]]) {
+; CHECK-NEXT:  [[ENTRY:.*:]]
+; CHECK-NEXT:    [[REM:%.*]] = srem i32 [[X]], 3
+; CHECK-NEXT:    [[NOT_ZERO_NOT:%.*]] = icmp eq i32 [[REM]], 0
+; CHECK-NEXT:    br i1 [[NOT_ZERO_NOT]], label %[[DIV:.*]], label %[[UNREACHABLE:.*]]
+; CHECK:       [[UNREACHABLE]]:
+; CHECK-NEXT:    unreachable
+; CHECK:       [[DIV]]:
+; CHECK-NEXT:    [[QUOT:%.*]] = sdiv exact i32 [[X]], -3
+; CHECK-NEXT:    ret i32 [[QUOT]]
+;
+entry:
+  %rem = srem i32 %x, -3
+  %not.zero = icmp ne i32 %rem, 0
+  br i1 %not.zero, label %unreachable, label %div
+
+unreachable:
+  unreachable
+
+div:
   %quot = sdiv i32 %x, -3
   ret i32 %quot
 }
@@ -242,19 +267,71 @@ define i32 @ret_sdiv_exact_pos_3_from_rem_neg_3_is_zero(i32 %x) {
   ret i32 %quot
 }
 
-; TODO: A zero remainder modulo +3 also makes division by -3 exact.
+define i32 @ret_sdiv_exact_pos_3_from_rem_neg_3_is_zero_unreachable(i32 %x) {
+; CHECK-LABEL: define i32 @ret_sdiv_exact_pos_3_from_rem_neg_3_is_zero_unreachable(
+; CHECK-SAME: i32 [[X:%.*]]) {
+; CHECK-NEXT:  [[ENTRY:.*:]]
+; CHECK-NEXT:    [[REM:%.*]] = srem i32 [[X]], 3
+; CHECK-NEXT:    [[NOT_ZERO_NOT:%.*]] = icmp eq i32 [[REM]], 0
+; CHECK-NEXT:    br i1 [[NOT_ZERO_NOT]], label %[[DIV:.*]], label %[[UNREACHABLE:.*]]
+; CHECK:       [[UNREACHABLE]]:
+; CHECK-NEXT:    unreachable
+; CHECK:       [[DIV]]:
+; CHECK-NEXT:    [[QUOT:%.*]] = sdiv exact i32 [[X]], 3
+; CHECK-NEXT:    ret i32 [[QUOT]]
+;
+entry:
+  %rem = srem i32 %x, -3
+  %not.zero = icmp ne i32 %rem, 0
+  br i1 %not.zero, label %unreachable, label %div
+
+unreachable:
+  unreachable
+
+div:
+  %quot = sdiv i32 %x, 3
+  ret i32 %quot
+}
+
+
 define i32 @ret_sdiv_exact_neg_3_from_rem_pos_3_is_zero(i32 %x) {
 ; CHECK-LABEL: define i32 @ret_sdiv_exact_neg_3_from_rem_pos_3_is_zero(
 ; CHECK-SAME: i32 [[X:%.*]]) {
 ; CHECK-NEXT:    [[REM:%.*]] = srem i32 [[X]], 3
 ; CHECK-NEXT:    [[IS_ZERO:%.*]] = icmp eq i32 [[REM]], 0
 ; CHECK-NEXT:    call void @llvm.assume(i1 [[IS_ZERO]])
-; CHECK-NEXT:    [[QUOT:%.*]] = sdiv i32 [[X]], -3
+; CHECK-NEXT:    [[QUOT:%.*]] = sdiv exact i32 [[X]], -3
 ; CHECK-NEXT:    ret i32 [[QUOT]]
 ;
   %rem = srem i32 %x, 3
   %is.zero = icmp eq i32 %rem, 0
   call void @llvm.assume(i1 %is.zero)
+  %quot = sdiv i32 %x, -3
+  ret i32 %quot
+}
+
+define i32 @ret_sdiv_exact_neg_3_from_rem_pos_3_is_zero_unreachable(i32 %x) {
+; CHECK-LABEL: define i32 @ret_sdiv_exact_neg_3_from_rem_pos_3_is_zero_unreachable(
+; CHECK-SAME: i32 [[X:%.*]]) {
+; CHECK-NEXT:  [[ENTRY:.*:]]
+; CHECK-NEXT:    [[REM:%.*]] = srem i32 [[X]], 3
+; CHECK-NEXT:    [[NOT_ZERO_NOT:%.*]] = icmp eq i32 [[REM]], 0
+; CHECK-NEXT:    br i1 [[NOT_ZERO_NOT]], label %[[DIV:.*]], label %[[UNREACHABLE:.*]]
+; CHECK:       [[UNREACHABLE]]:
+; CHECK-NEXT:    unreachable
+; CHECK:       [[DIV]]:
+; CHECK-NEXT:    [[QUOT:%.*]] = sdiv exact i32 [[X]], -3
+; CHECK-NEXT:    ret i32 [[QUOT]]
+;
+entry:
+  %rem = srem i32 %x, 3
+  %not.zero = icmp ne i32 %rem, 0
+  br i1 %not.zero, label %unreachable, label %div
+
+unreachable:
+  unreachable
+
+div:
   %quot = sdiv i32 %x, -3
   ret i32 %quot
 }
@@ -291,14 +368,13 @@ define i32 @ret_sdiv_exact_pos_10000_from_zero_remainder(i32 %x) {
   ret i32 %quot
 }
 
-; TODO: A zero remainder modulo -10000 also makes division by -10000 exact.
 define i32 @ret_sdiv_exact_neg_10000_from_zero_remainder(i32 %x) {
 ; CHECK-LABEL: define i32 @ret_sdiv_exact_neg_10000_from_zero_remainder(
 ; CHECK-SAME: i32 [[X:%.*]]) {
 ; CHECK-NEXT:    [[REM:%.*]] = srem i32 [[X]], 10000
 ; CHECK-NEXT:    [[IS_ZERO:%.*]] = icmp eq i32 [[REM]], 0
 ; CHECK-NEXT:    call void @llvm.assume(i1 [[IS_ZERO]])
-; CHECK-NEXT:    [[QUOT:%.*]] = sdiv i32 [[X]], -10000
+; CHECK-NEXT:    [[QUOT:%.*]] = sdiv exact i32 [[X]], -10000
 ; CHECK-NEXT:    ret i32 [[QUOT]]
 ;
   %rem = srem i32 %x, -10000

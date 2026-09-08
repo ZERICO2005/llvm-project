@@ -1336,7 +1336,13 @@ static bool isKnownExactFromRem(const BinaryOperator &Div,
   Value *Op0 = Div.getOperand(0);
   Value *Op1 = Div.getOperand(1);
 
-  auto IsKnownZeroRemainder = [&](Value *Cond) {
+  // `srem X, C` is canonicalized to `srem X, |C|`.
+  Value *NegOp1 = nullptr;
+  if (RemOpcode == Instruction::SRem)
+    if (auto *C = dyn_cast<ConstantInt>(Op1))
+      NegOp1 = ConstantInt::get(C->getType(), -C->getValue());
+
+  auto IsKnownZeroRemainder = [&](Value *Cond) -> bool {
     auto *Cmp = dyn_cast<ICmpInst>(Cond);
     if (!Cmp || !Cmp->isEquality())
       return false;
@@ -1345,8 +1351,9 @@ static bool isKnownExactFromRem(const BinaryOperator &Div,
     BinaryOperator *Rem;
     if (!match(Cmp, m_c_ICmp(m_BinOp(Rem), m_Zero())))
       return false;
-    if (Rem->getOpcode() != RemOpcode || Rem->getOperand(0) != Op0 ||
-        Rem->getOperand(1) != Op1)
+    if (!(Rem->getOpcode() == RemOpcode && Rem->getOperand(0) == Op0 &&
+          (Rem->getOperand(1) == Op1 ||
+           (NegOp1 && Rem->getOperand(1) == NegOp1))))
       return false;
 
     KnownBits Known(Rem->getType()->getScalarSizeInBits());
