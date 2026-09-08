@@ -66,7 +66,7 @@ entry:
 
 for.body:
   %iv = phi i64 [ 0, %entry ], [ %iv.next, %for.body ]
-  %sum.07 = phi float [ 0xFFFFFFFFE0000000, %entry ], [ %add, %for.body ]
+  %sum.07 = phi float [ -nan(0x3FFFFF), %entry ], [ %add, %for.body ]
   %arrayidx = getelementptr inbounds float, ptr %a, i64 %iv
   %0 = load float, ptr %arrayidx, align 4
   %add = fadd float %0, %sum.07

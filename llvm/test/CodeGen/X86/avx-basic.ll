@@ -41,8 +41,8 @@ define void @ones(ptr nocapture %RET, ptr nocapture %aFOO) nounwind {
 ; CHECK-NEXT:    retq
 allocas:
   store <8 x float> <float -nan(0x3FFFFF), float -nan(0x3FFFFF), float
-0xFFFFFFFFE0000000, float -nan(0x3FFFFF), float -nan(0x3FFFFF), float
-0xFFFFFFFFE0000000, float -nan(0x3FFFFF), float -nan(0x3FFFFF)>, ptr %RET, align 32
+-nan(0x3FFFFF), float -nan(0x3FFFFF), float -nan(0x3FFFFF), float
+-nan(0x3FFFFF), float -nan(0x3FFFFF), float -nan(0x3FFFFF)>, ptr %RET, align 32
   ret void
 }
 

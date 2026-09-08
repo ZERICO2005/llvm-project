@@ -27,7 +27,7 @@ bb1:
   br label %bb2
 
 bb2:                                              ; preds = %bb1, %bb
-  %i = phi float [ 0xFFFFFFFFE0000000, %bb ], [ 0.000000e+00, %bb1 ]
+  %i = phi float [ -nan(0x3FFFFF), %bb ], [ 0.000000e+00, %bb1 ]
   %i3 = fcmp oeq float %i, %arg
   br i1 %i3, label %bb4, label %bb5
 
@@ -59,7 +59,7 @@ bb1:
   br label %bb2
 
 bb2:                                              ; preds = %bb1, %bb
-  %i = phi float [ 0xFFFFFFFFE0000000, %bb ], [ 0.000000e+00, %bb1 ]
+  %i = phi float [ -nan(0x3FFFFF), %bb ], [ 0.000000e+00, %bb1 ]
   %i3 = fcmp ueq float %i, %arg
   br i1 %i3, label %bb4, label %bb5
 
@@ -89,7 +89,7 @@ bb1:
   br label %bb2
 
 bb2:                                              ; preds = %bb1, %bb
-  %i = phi float [ 0x7FFFFFFFE0000000, %bb ], [ 0.000000e+00, %bb1 ]
+  %i = phi float [ +nan(0x3FFFFF), %bb ], [ 0.000000e+00, %bb1 ]
   %i3 = fcmp oeq float %i, %arg
   br i1 %i3, label %bb4, label %bb5
 
