@@ -5333,7 +5333,7 @@ void computeKnownFPClass(const Value *V, const APInt &DemandedElts,
   }
   case Instruction::Call: {
     const CallInst *II = cast<CallInst>(Op);
-    const Intrinsic::ID IID = II->getIntrinsicID();
+    const Intrinsic::ID IID = getIntrinsicForCallSite(*II, Q.TLI);
     switch (IID) {
     case Intrinsic::fabs: {
       if ((InterestedClasses & (fcNan | fcPositive)) != fcNone) {
