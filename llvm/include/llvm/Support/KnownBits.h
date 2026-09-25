@@ -20,6 +20,8 @@
 
 namespace llvm {
 
+struct fltSemantics;
+
 // Struct for tracking the known zeros and ones of a value.
 struct KnownBits {
   APInt Zero;
@@ -555,6 +557,16 @@ public:
   /// elements, where each element has the known bits represented by this
   /// object.
   LLVM_ABI KnownBits reduceAdd(unsigned NumElts) const;
+
+  /// Compute known bits for the result of the uitofp conversion of a value
+  /// with the known bits given by Src, in floating point semantics Sem.
+  LLVM_ABI static KnownBits uitofp(const KnownBits &Src,
+                                   const fltSemantics &Sem);
+
+  /// Compute known bits for the result of the sitofp conversion of a value
+  /// with the known bits given by Src, in floating point semantics Sem.
+  LLVM_ABI static KnownBits sitofp(const KnownBits &Src,
+                                   const fltSemantics &Sem);
 
   KnownBits byteSwap() const {
     return KnownBits(Zero.byteSwap(), One.byteSwap());

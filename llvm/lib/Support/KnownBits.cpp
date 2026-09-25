@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Support/KnownBits.h"
+#include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/Sequence.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
@@ -873,6 +874,103 @@ KnownBits KnownBits::reduceAdd(unsigned NumElts) const {
   return Result;
 }
 
+// Compute the KnownBits for a value known to lie in the unsigned range
+// [Min, Max], keeping only the common leading bits of the two bounds (as
+// ConstantRange::toKnownBits does), which can include leading ones, not
+// just leading zeros.
+static KnownBits unsignedRangeToKnownBits(const APInt &Min, const APInt &Max) {
+  KnownBits Known = KnownBits::makeConstant(Min);
+  if (std::optional<unsigned> DifferentBit =
+          APIntOps::GetMostSignificantDifferentBit(Min, Max)) {
+    Known.Zero.clearLowBits(*DifferentBit + 1);
+    Known.One.clearLowBits(*DifferentBit + 1);
+  }
+  return Known;
+}
+
+// Motivation: (float)int_value can be used as a count leading zeros operation.
+// Preconditions:
+// - Mag cannot have conflicting bits.
+// - Sem must match the definiton of APFloat::isIEEELikeFP
+static KnownBits magnitudeToFP(const KnownBits &Mag, const fltSemantics &Sem) {
+  const unsigned FltWidth = APFloat::semanticsSizeInBits(Sem);
+  KnownBits Known(FltWidth);
+
+  if (Mag.isZero()) {
+    // Clearing the signbit here is harmless.
+    Known.setAllZero();
+    return Known;
+  }
+
+  const bool MayBeZero = !Mag.isNonZero();
+  KnownBits NonZero = Mag;
+  if (!NonZero.isNonZero())
+    NonZero.One.setBit(Mag.countMinTrailingZeros());
+
+  const unsigned Size = Mag.getBitWidth();
+  const unsigned MinLeadingZeros = NonZero.countMinLeadingZeros();
+  const unsigned MaxLeadingZeros = NonZero.countMaxLeadingZeros();
+  const unsigned MinTrailingZeros = NonZero.countMinTrailingZeros();
+
+  const unsigned PrecisionNeeded = Size - (MinLeadingZeros + MinTrailingZeros);
+
+  const unsigned Precision = APFloat::semanticsPrecision(Sem);
+  // We are assuming that the rounding mode is Dynamic here.
+  const bool MayRound = PrecisionNeeded > Precision;
+
+  const unsigned ExponentBitsIndex = Precision - 1;
+  const unsigned ExponentBitsCount = FltWidth - Precision;
+  const unsigned Bias = APFloat::semanticsMaxExponent(Sem);
+
+  unsigned MaxExponent = ((Size - 1) - MinLeadingZeros) + Bias;
+  unsigned MinExponent = ((Size - 1) - MaxLeadingZeros) + Bias;
+
+  // Rounding up can carry into the next binade.
+  if (MayRound)
+    ++MaxExponent;
+
+  // Note that all integers are finite, so the result might not be infinity
+  // if we are rounding towards zero.
+  const unsigned MaxFiniteExponent = 2 * Bias;
+  const unsigned InfExponent = 2 * Bias + 1;
+  MinExponent = std::min(MinExponent, MaxFiniteExponent);
+  MaxExponent = std::min(MaxExponent, InfExponent);
+
+  KnownBits Exponent =
+      unsignedRangeToKnownBits(APInt(ExponentBitsCount, MinExponent),
+                               APInt(ExponentBitsCount, MaxExponent));
+  Known.insertBits(Exponent, ExponentBitsIndex);
+
+  if (MayBeZero)
+    Known.One.clearAllBits();
+
+  return Known;
+}
+
+KnownBits KnownBits::uitofp(const KnownBits &Src, const fltSemantics &Sem) {
+  if (Src.hasConflict() || !APFloat::isIEEELikeFP(Sem))
+    return KnownBits(APFloat::semanticsSizeInBits(Sem));
+
+  KnownBits Known = magnitudeToFP(Src, Sem);
+  Known.makeNonNegative();
+  return Known;
+}
+
+KnownBits KnownBits::sitofp(const KnownBits &Src, const fltSemantics &Sem) {
+  if (Src.hasConflict() || !APFloat::isIEEELikeFP(Sem))
+    return KnownBits(APFloat::semanticsSizeInBits(Sem));
+
+  // TODO: abs destroys information if the signbit is unknown or negative.
+  KnownBits Known = magnitudeToFP(Src.abs(), Sem);
+
+  if (Src.isNonNegative())
+    Known.makeNonNegative();
+  else if (Src.isNegative())
+    Known.makeNegative();
+
+  return Known;
+}
+
 static KnownBits computeForSatAddSub(bool Add, bool Signed,
                                      const KnownBits &LHS,
                                      const KnownBits &RHS) {
@@ -1300,18 +1398,11 @@ KnownBits KnownBits::udiv(const KnownBits &LHS, const KnownBits &RHS,
 
   // The quotient grows when the numerator grows and shrinks when the
   // denominator grows, and all four operand bounds are attainable, so the
-  // result is in [MinNum / MaxDenom, MaxNum / MinDenom]. Keep the common
-  // leading bits of the two bounds (as ConstantRange::toKnownBits does),
-  // which can include leading ones, not just leading zeros.
+  // result is in [MinNum / MaxDenom, MaxNum / MinDenom].
   APInt MaxRes = LHS.getMaxValue().udiv(MinDenom);
   APInt MinRes = LHS.getMinValue().udiv(RHS.getMaxValue());
 
-  Known = KnownBits::makeConstant(MinRes);
-  if (std::optional<unsigned> DifferentBit =
-          APIntOps::GetMostSignificantDifferentBit(MinRes, MaxRes)) {
-    Known.Zero.clearLowBits(*DifferentBit + 1);
-    Known.One.clearLowBits(*DifferentBit + 1);
-  }
+  Known = unsignedRangeToKnownBits(MinRes, MaxRes);
 
   Known = divComputeLowBit(Known, LHS, RHS, Exact);
 

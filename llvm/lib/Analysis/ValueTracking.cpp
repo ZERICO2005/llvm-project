@@ -1585,6 +1585,26 @@ static void computeKnownBitsFromOperator(const Operator *I,
     if (match(I, m_ElementWiseBitCast(m_Value(V))) &&
         V->getType()->isFPOrFPVectorTy()) {
       Type *FPType = V->getType()->getScalarType();
+
+      // (bitcast (uitofp/sitofp X) to iN) is used as an idiom to extract the
+      // exponent bits of the converted value (e.g. as a count-leading-zeros
+      // operation). Compute this directly from the integer operand's known
+      // bits, which can retain partial exponent knowledge that KnownFPClass
+      // cannot represent.
+      const Value *Src;
+      bool IsSigned;
+      if ((IsSigned = match(V, m_SIToFP(m_Value(Src)))) ||
+          match(V, m_UIToFP(m_Value(Src)))) {
+        unsigned SrcBitWidth =
+            Src->getType()->getScalarType()->getIntegerBitWidth();
+        KnownBits SrcKnown(SrcBitWidth);
+        computeKnownBits(Src, DemandedElts, SrcKnown, Q, Depth + 1);
+        const fltSemantics &Sem = FPType->getFltSemantics();
+        Known = IsSigned ? KnownBits::sitofp(SrcKnown, Sem)
+                        : KnownBits::uitofp(SrcKnown, Sem);
+        break;
+      }
+
       KnownFPClass Result =
           computeKnownFPClass(V, DemandedElts, fcAllFlags, Q, Depth + 1);
 
