@@ -12,6 +12,7 @@
 
 #include "llvm/Support/KnownBits.h"
 #include "KnownBitsTest.h"
+#include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
@@ -1115,6 +1116,92 @@ TEST(KnownBitsTest, TruncateSatExhaustive) {
       });
     }
   }
+}
+
+// Checks that KnownBits::uitofp/sitofp are a sound (but not necessarily
+// optimal, since they don't compute any mantissa bits) approximation of the
+// actual conversion, under every rounding mode -- the conversion instructions
+// are specified to use the (unknown at compile time) default/dynamic
+// rounding mode.
+static void checkIToFPSound(StringRef Name, bool Signed,
+                            const KnownBits &Known, const fltSemantics &Sem) {
+  if (Known.hasConflict())
+    return;
+
+  KnownBits Computed = Signed ? KnownBits::sitofp(Known, Sem)
+                              : KnownBits::uitofp(Known, Sem);
+
+  unsigned FltWidth = APFloat::semanticsSizeInBits(Sem);
+  KnownBits Exact(FltWidth);
+  Exact.Zero.setAllBits();
+  Exact.One.setAllBits();
+
+  static const APFloat::roundingMode RMs[] = {
+      APFloat::rmNearestTiesToEven, APFloat::rmTowardZero,
+      APFloat::rmTowardPositive, APFloat::rmTowardNegative};
+
+  ForeachNumInKnownBits(Known, [&](const APInt &N) {
+    for (APFloat::roundingMode RM : RMs) {
+      APFloat F(Sem);
+      F.convertFromAPInt(N, Signed, RM);
+      APInt Bits = F.bitcastToAPInt();
+      Exact.One &= Bits;
+      Exact.Zero &= ~Bits;
+    }
+  });
+
+  if (!Exact.hasConflict())
+    EXPECT_TRUE(checkResult(Name, Exact, Computed, {Known},
+                            /*CheckOptimality=*/false));
+}
+
+TEST(KnownBitsTest, UIToFPExhaustive) {
+  for (unsigned Bits : {1, 4})
+    ForeachKnownBits(Bits, [&](const KnownBits &Known) {
+      checkIToFPSound("uitofp", /*Signed=*/false, Known, APFloat::IEEEhalf());
+    });
+}
+
+TEST(KnownBitsTest, SIToFPExhaustive) {
+  for (unsigned Bits : {1, 4})
+    ForeachKnownBits(Bits, [&](const KnownBits &Known) {
+      checkIToFPSound("sitofp", /*Signed=*/true, Known, APFloat::IEEEhalf());
+    });
+}
+
+// Directed cases covering rounding/overflow near the edge of IEEEhalf's
+// finite range (max finite value is 65504), where a value can either round
+// up into the exponent above (or all the way to Inf) or round down/truncate
+// to the largest finite value, depending on the (unknown) rounding mode.
+TEST(KnownBitsTest, UIToFPHalfOverflow) {
+  // Fully known value straddling the rounding boundary just above the
+  // largest finite half (65520 rounds down to 65504 under
+  // round-toward-zero/negative, or up to Inf under round-to-nearest/toward
+  // positive).
+  checkIToFPSound("uitofp", /*Signed=*/false,
+                  KnownBits::makeConstant(APInt(24, 65520)),
+                  APFloat::IEEEhalf());
+  // A range of low-order-unknown values whose upper bound overflows and
+  // whose lower bound does not.
+  KnownBits Known = KnownBits::makeConstant(APInt(20, 65488));
+  Known.Zero.clearLowBits(6);
+  Known.One.clearLowBits(6);
+  checkIToFPSound("uitofp", /*Signed=*/false, Known, APFloat::IEEEhalf());
+  // A magnitude far beyond the finite range of half at all.
+  Known = KnownBits::makeConstant(APInt(20, 1 << 19));
+  Known.Zero.clearLowBits(8);
+  Known.One.clearLowBits(8);
+  checkIToFPSound("uitofp", /*Signed=*/false, Known, APFloat::IEEEhalf());
+}
+
+TEST(KnownBitsTest, SIToFPHalfOverflow) {
+  checkIToFPSound("sitofp", /*Signed=*/true,
+                  KnownBits::makeConstant(APInt(24, -65520, /*IsSigned=*/true)),
+                  APFloat::IEEEhalf());
+  KnownBits Known = KnownBits::makeConstant(APInt(20, -65488, /*IsSigned=*/true));
+  Known.Zero.clearLowBits(6);
+  Known.One.clearLowBits(6);
+  checkIToFPSound("sitofp", /*Signed=*/true, Known, APFloat::IEEEhalf());
 }
 
 } // end anonymous namespace

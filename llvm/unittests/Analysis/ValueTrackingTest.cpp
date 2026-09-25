@@ -3218,6 +3218,58 @@ TEST_F(ComputeKnownBitsTest, ComputeKnownBitsFPToSIUnknownSign) {
   expectKnownBits(/*Zero*/ 0u, /*One*/ 0u);
 }
 
+TEST_F(ComputeKnownBitsTest, ComputeKnownBitsUIToFPExact) {
+  // computeKnownBits only reasons about a uitofp's bit pattern through the
+  // "(bitcast (uitofp X) to iN)" idiom used to extract exponent bits (e.g.
+  // as a count-leading-zeros operation) -- it can never be asked about the
+  // float-typed uitofp result directly.
+  //
+  // Here the value is in [128, 255], which fits exactly (no rounding) with
+  // exponent 7 (biased 134) in every case, so the sign and exponent bits of
+  // the float bit pattern are known.
+  parseAssembly("define i32 @test(i8 %a) {\n"
+                "  %or = or i8 %a, 128\n"
+                "  %fp = uitofp i8 %or to float\n"
+                "  %A = bitcast float %fp to i32\n"
+                "  ret i32 %A\n"
+                "}\n");
+  expectKnownBits(/*Zero*/ 0x80000000u | (0x79u << 23),
+                  /*One*/ 0x86u << 23);
+}
+
+TEST_F(ComputeKnownBitsTest, ComputeKnownBitsSIToFPNonNegative) {
+  // sitofp of a known-non-negative value is never negative.
+  parseAssembly("define i32 @test(i32 %a) {\n"
+                "  %nn = and i32 %a, 2147483647\n"
+                "  %fp = sitofp i32 %nn to float\n"
+                "  %A = bitcast float %fp to i32\n"
+                "  ret i32 %A\n"
+                "}\n");
+  expectKnownBits(/*Zero*/ 0x80000000u, /*One*/ 0u);
+}
+
+TEST_F(ComputeKnownBitsTest, ComputeKnownBitsSIToFPNegative) {
+  // sitofp of a known-negative value is never non-negative.
+  parseAssembly("define i32 @test(i32 %a) {\n"
+                "  %neg = or i32 %a, 2147483648\n"
+                "  %fp = sitofp i32 %neg to float\n"
+                "  %A = bitcast float %fp to i32\n"
+                "  ret i32 %A\n"
+                "}\n");
+  expectKnownBits(/*Zero*/ 0u, /*One*/ 0x80000000u);
+}
+
+TEST_F(ComputeKnownBitsTest, ComputeKnownBitsUIToFPZero) {
+  // A uitofp of a known-zero value is a known-zero float.
+  parseAssembly("define i32 @test(i32 %a) {\n"
+                "  %z = and i32 %a, 0\n"
+                "  %fp = uitofp i32 %z to float\n"
+                "  %A = bitcast float %fp to i32\n"
+                "  ret i32 %A\n"
+                "}\n");
+  expectKnownBits(/*Zero*/ 0xFFFFFFFFu, /*One*/ 0u);
+}
+
 TEST_F(ValueTrackingTest, HaveNoCommonBitsSet) {
   {
     // Check for an inverted mask: (X & ~M) op (Y & M).

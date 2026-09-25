@@ -936,6 +936,11 @@ static KnownBits magnitudeToFP(const KnownBits &Mag, const fltSemantics &Sem) {
   MinExponent = std::min(MinExponent, MaxFiniteExponent);
   MaxExponent = std::min(MaxExponent, InfExponent);
 
+  // Note: Bias == 2^(ExponentBitsCount-1) - 1 is all-ones, so MinExponent ==
+  // Bias and MaxExponent == Bias + 1 (i.e. a magnitude range spanning the
+  // 1.0/2.0 boundary) are exact bit complements and share no common bits --
+  // this specific boundary destroys every exponent bit, unlike other
+  // exponent transitions which only change a few low bits.
   KnownBits Exponent =
       unsignedRangeToKnownBits(APInt(ExponentBitsCount, MinExponent),
                                APInt(ExponentBitsCount, MaxExponent));

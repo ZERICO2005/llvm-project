@@ -809,6 +809,16 @@ void GISelValueTracking::computeKnownBitsImpl(Register R, KnownBits &Known,
     Known = Known.zextOrTrunc(BitWidth);
     break;
   }
+  case TargetOpcode::G_UITOFP:
+  case TargetOpcode::G_SITOFP: {
+    Register SrcReg = MI.getOperand(1).getReg();
+    computeKnownBitsImpl(SrcReg, Known2, DemandedElts, Depth + 1);
+    const fltSemantics &Sem = getFltSemanticForLLT(DstTy.getScalarType());
+    Known = Opcode == TargetOpcode::G_UITOFP
+                ? KnownBits::uitofp(Known2, Sem)
+                : KnownBits::sitofp(Known2, Sem);
+    break;
+  }
   case TargetOpcode::G_TRUNC_SSAT_S: {
     Register SrcReg = MI.getOperand(1).getReg();
     computeKnownBitsImpl(SrcReg, Known, DemandedElts, Depth + 1);

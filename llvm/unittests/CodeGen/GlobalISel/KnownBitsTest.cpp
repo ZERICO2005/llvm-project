@@ -43,6 +43,47 @@ TEST_F(AArch64GISelMITest, TestKnownBitsCstPHI) {
   EXPECT_EQ(Res.Zero.getZExtValue(), Res2.Zero.getZExtValue());
 }
 
+// Check that known bits of an integer feeding a uitofp/sitofp are used to
+// compute known bits of the resulting float's bit pattern, as used e.g. by
+// the "convert to float to count leading zeros" idiom.
+TEST_F(AArch64GISelMITest, TestKnownBitsUITOFP) {
+  StringRef MIRString = "  %10:_(s8) = G_CONSTANT i8 -128\n"
+                        "  %11:_(s8) = G_IMPLICIT_DEF\n"
+                        "  %12:_(s8) = G_OR %10, %11\n"
+                        "  %13:_(s32) = G_UITOFP %12\n"
+                        "  %14:_(s32) = COPY %13\n";
+  setUp(MIRString);
+  if (!TM)
+    GTEST_SKIP();
+  Register CopyReg = Copies[Copies.size() - 1];
+  MachineInstr *FinalCopy = MRI->getVRegDef(CopyReg);
+  Register SrcReg = FinalCopy->getOperand(1).getReg();
+  GISelValueTracking Info(*MF);
+  KnownBits Res = Info.getKnownBits(SrcReg);
+  // %12 is in [128, 255], which is exactly representable with exponent 7
+  // (biased 134) in every case, so the sign and exponent bits are known.
+  EXPECT_EQ((uint64_t)0x86u << 23, Res.One.getZExtValue());
+  EXPECT_EQ((uint64_t)0x80000000u | (0x79u << 23), Res.Zero.getZExtValue());
+}
+
+TEST_F(AArch64GISelMITest, TestKnownBitsSITOFPNonNegative) {
+  StringRef MIRString = "  %10:_(s32) = G_IMPLICIT_DEF\n"
+                        "  %11:_(s32) = G_CONSTANT i32 2147483647\n"
+                        "  %12:_(s32) = G_AND %10, %11\n"
+                        "  %13:_(s32) = G_SITOFP %12\n"
+                        "  %14:_(s32) = COPY %13\n";
+  setUp(MIRString);
+  if (!TM)
+    GTEST_SKIP();
+  Register CopyReg = Copies[Copies.size() - 1];
+  MachineInstr *FinalCopy = MRI->getVRegDef(CopyReg);
+  Register SrcReg = FinalCopy->getOperand(1).getReg();
+  GISelValueTracking Info(*MF);
+  KnownBits Res = Info.getKnownBits(SrcReg);
+  EXPECT_EQ((uint64_t)0, Res.One.getZExtValue());
+  EXPECT_EQ((uint64_t)0x80000000u, Res.Zero.getZExtValue());
+}
+
 // Check that we report we know nothing when we hit a
 // non-generic register.
 // Note: this could be improved though!
