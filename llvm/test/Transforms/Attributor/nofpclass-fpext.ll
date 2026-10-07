@@ -302,7 +302,7 @@ define float @ret_fpext_bf16_f32_noninf(bfloat nofpclass(ninf) %arg0) {
 }
 
 define float @ret_fpext_bf16_f32_nozero(bfloat nofpclass(zero) %arg0) {
-; CHECK-LABEL: define float @ret_fpext_bf16_f32_nozero
+; CHECK-LABEL: define nofpclass(zero) float @ret_fpext_bf16_f32_nozero
 ; CHECK-SAME: (bfloat nofpclass(zero) [[ARG0:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
 ; CHECK-NEXT:    ret float [[EXT]]
@@ -312,7 +312,7 @@ define float @ret_fpext_bf16_f32_nozero(bfloat nofpclass(zero) %arg0) {
 }
 
 define float @ret_fpext_bf16_f32_nopzero(bfloat nofpclass(pzero) %arg0) {
-; CHECK-LABEL: define float @ret_fpext_bf16_f32_nopzero
+; CHECK-LABEL: define nofpclass(pzero) float @ret_fpext_bf16_f32_nopzero
 ; CHECK-SAME: (bfloat nofpclass(pzero) [[ARG0:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
 ; CHECK-NEXT:    ret float [[EXT]]
@@ -322,7 +322,7 @@ define float @ret_fpext_bf16_f32_nopzero(bfloat nofpclass(pzero) %arg0) {
 }
 
 define float @ret_fpext_bf16_f32_nonzero(bfloat nofpclass(nzero) %arg0) {
-; CHECK-LABEL: define float @ret_fpext_bf16_f32_nonzero
+; CHECK-LABEL: define nofpclass(nzero) float @ret_fpext_bf16_f32_nonzero
 ; CHECK-SAME: (bfloat nofpclass(nzero) [[ARG0:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
 ; CHECK-NEXT:    ret float [[EXT]]
@@ -522,7 +522,7 @@ define double @ret_fpext_bf16_f64_nonorm_sub(bfloat nofpclass(norm sub) %arg0) {
 }
 
 define float @ret_fpext_bf16_f32__sub(bfloat nofpclass(nan inf zero norm) %arg0) {
-; CHECK-LABEL: define nofpclass(nan inf) float @ret_fpext_bf16_f32__sub
+; CHECK-LABEL: define nofpclass(nan inf zero) float @ret_fpext_bf16_f32__sub
 ; CHECK-SAME: (bfloat nofpclass(nan inf zero norm) [[ARG0:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
 ; CHECK-NEXT:    ret float [[EXT]]
@@ -532,7 +532,7 @@ define float @ret_fpext_bf16_f32__sub(bfloat nofpclass(nan inf zero norm) %arg0)
 }
 
 define float @ret_fpext_bf16_f32__psub(bfloat nofpclass(nan inf zero nsub norm) %arg0) {
-; CHECK-LABEL: define nofpclass(nan inf nzero nsub nnorm) float @ret_fpext_bf16_f32__psub
+; CHECK-LABEL: define nofpclass(nan inf zero nsub nnorm) float @ret_fpext_bf16_f32__psub
 ; CHECK-SAME: (bfloat nofpclass(nan inf zero nsub norm) [[ARG0:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
 ; CHECK-NEXT:    ret float [[EXT]]
@@ -542,7 +542,7 @@ define float @ret_fpext_bf16_f32__psub(bfloat nofpclass(nan inf zero nsub norm) 
 }
 
 define float @ret_fpext_bf16_f32__nsub(bfloat nofpclass(nan inf zero psub norm) %arg0) {
-; CHECK-LABEL: define nofpclass(nan inf pzero psub pnorm) float @ret_fpext_bf16_f32__nsub
+; CHECK-LABEL: define nofpclass(nan inf zero psub pnorm) float @ret_fpext_bf16_f32__nsub
 ; CHECK-SAME: (bfloat nofpclass(nan inf zero psub norm) [[ARG0:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
 ; CHECK-NEXT:    ret float [[EXT]]
@@ -552,7 +552,7 @@ define float @ret_fpext_bf16_f32__nsub(bfloat nofpclass(nan inf zero psub norm) 
 }
 
 define float @ret_fpext_bf16_f32__norm(bfloat nofpclass(nan inf zero sub) %arg0) {
-; CHECK-LABEL: define nofpclass(nan inf) float @ret_fpext_bf16_f32__norm
+; CHECK-LABEL: define nofpclass(nan inf zero) float @ret_fpext_bf16_f32__norm
 ; CHECK-SAME: (bfloat nofpclass(nan inf zero sub) [[ARG0:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
 ; CHECK-NEXT:    ret float [[EXT]]
@@ -562,7 +562,7 @@ define float @ret_fpext_bf16_f32__norm(bfloat nofpclass(nan inf zero sub) %arg0)
 }
 
 define fp128 @ret_fpext_f80_f128__sub(x86_fp80 nofpclass(nan inf zero norm) %arg0) {
-; CHECK-LABEL: define nofpclass(nan inf) fp128 @ret_fpext_f80_f128__sub
+; CHECK-LABEL: define nofpclass(nan inf zero) fp128 @ret_fpext_f80_f128__sub
 ; CHECK-SAME: (x86_fp80 nofpclass(nan inf zero norm) [[ARG0:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:    [[EXT:%.*]] = fpext x86_fp80 [[ARG0]] to fp128
 ; CHECK-NEXT:    ret fp128 [[EXT]]
@@ -572,7 +572,7 @@ define fp128 @ret_fpext_f80_f128__sub(x86_fp80 nofpclass(nan inf zero norm) %arg
 }
 
 define fp128 @ret_fpext_f80_f128__psub(x86_fp80 nofpclass(nan inf zero nsub norm) %arg0) {
-; CHECK-LABEL: define nofpclass(nan inf nzero nsub nnorm) fp128 @ret_fpext_f80_f128__psub
+; CHECK-LABEL: define nofpclass(nan inf zero nsub nnorm) fp128 @ret_fpext_f80_f128__psub
 ; CHECK-SAME: (x86_fp80 nofpclass(nan inf zero nsub norm) [[ARG0:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:    [[EXT:%.*]] = fpext x86_fp80 [[ARG0]] to fp128
 ; CHECK-NEXT:    ret fp128 [[EXT]]
@@ -582,7 +582,7 @@ define fp128 @ret_fpext_f80_f128__psub(x86_fp80 nofpclass(nan inf zero nsub norm
 }
 
 define fp128 @ret_fpext_f80_f128__nsub(x86_fp80 nofpclass(nan inf zero psub norm) %arg0) {
-; CHECK-LABEL: define nofpclass(nan inf pzero psub pnorm) fp128 @ret_fpext_f80_f128__nsub
+; CHECK-LABEL: define nofpclass(nan inf zero psub pnorm) fp128 @ret_fpext_f80_f128__nsub
 ; CHECK-SAME: (x86_fp80 nofpclass(nan inf zero psub norm) [[ARG0:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:    [[EXT:%.*]] = fpext x86_fp80 [[ARG0]] to fp128
 ; CHECK-NEXT:    ret fp128 [[EXT]]
@@ -592,7 +592,7 @@ define fp128 @ret_fpext_f80_f128__nsub(x86_fp80 nofpclass(nan inf zero psub norm
 }
 
 define fp128 @ret_fpext_f80_f128__norm(x86_fp80 nofpclass(nan inf zero sub) %arg0) {
-; CHECK-LABEL: define nofpclass(nan inf) fp128 @ret_fpext_f80_f128__norm
+; CHECK-LABEL: define nofpclass(nan inf zero) fp128 @ret_fpext_f80_f128__norm
 ; CHECK-SAME: (x86_fp80 nofpclass(nan inf zero sub) [[ARG0:%.*]]) #[[ATTR0]] {
 ; CHECK-NEXT:    [[EXT:%.*]] = fpext x86_fp80 [[ARG0]] to fp128
 ; CHECK-NEXT:    ret fp128 [[EXT]]
@@ -600,6 +600,304 @@ define fp128 @ret_fpext_f80_f128__norm(x86_fp80 nofpclass(nan inf zero sub) %arg
   %ext = fpext x86_fp80 %arg0 to fp128
   ret fp128 %ext
 }
+
+; bf16 subnormals stay subnormal in f32, so the conversion is exact but the
+; result is still exposed to the output mode. The ieee_* modes exercise only
+; the input flush and the *_ieee modes only the output flush; the combined
+; modes cannot tell the two apart, since they pass if either one alone is
+; applied.
+
+define float @ret_fpext_bf16_f32__no_zero__mode_ieee_ieee(bfloat nofpclass(zero) %arg0) #0 {
+; CHECK-LABEL: define nofpclass(zero) float @ret_fpext_bf16_f32__no_zero__mode_ieee_ieee
+; CHECK-SAME: (bfloat nofpclass(zero) [[ARG0:%.*]]) #[[ATTR1:[0-9]+]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__no_zero__mode_ieee_dapz(bfloat nofpclass(zero) %arg0) #1 {
+; CHECK-LABEL: define nofpclass(nzero) float @ret_fpext_bf16_f32__no_zero__mode_ieee_dapz
+; CHECK-SAME: (bfloat nofpclass(zero) [[ARG0:%.*]]) #[[ATTR2:[0-9]+]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__no_zero__mode_ieee_dynamic(bfloat nofpclass(zero) %arg0) #2 {
+; CHECK-LABEL: define float @ret_fpext_bf16_f32__no_zero__mode_ieee_dynamic
+; CHECK-SAME: (bfloat nofpclass(zero) [[ARG0:%.*]]) #[[ATTR3:[0-9]+]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__no_zero__mode_ftpz_ieee(bfloat nofpclass(zero) %arg0) #3 {
+; CHECK-LABEL: define nofpclass(nzero) float @ret_fpext_bf16_f32__no_zero__mode_ftpz_ieee
+; CHECK-SAME: (bfloat nofpclass(zero) [[ARG0:%.*]]) #[[ATTR4:[0-9]+]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__no_zero__mode_dynamic_ieee(bfloat nofpclass(zero) %arg0) #4 {
+; CHECK-LABEL: define float @ret_fpext_bf16_f32__no_zero__mode_dynamic_ieee
+; CHECK-SAME: (bfloat nofpclass(zero) [[ARG0:%.*]]) #[[ATTR5:[0-9]+]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__no_zero__mode_ftpz_dapz(bfloat nofpclass(zero) %arg0) #5 {
+; CHECK-LABEL: define nofpclass(nzero) float @ret_fpext_bf16_f32__no_zero__mode_ftpz_dapz
+; CHECK-SAME: (bfloat nofpclass(zero) [[ARG0:%.*]]) #[[ATTR6:[0-9]+]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__no_zero__mode_dynamic_dynamic(bfloat nofpclass(zero) %arg0) #6 {
+; CHECK-LABEL: define float @ret_fpext_bf16_f32__no_zero__mode_dynamic_dynamic
+; CHECK-SAME: (bfloat nofpclass(zero) [[ARG0:%.*]]) #[[ATTR7:[0-9]+]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__negsubnormal__mode_ieee_ieee(bfloat nofpclass(nan inf zero psub norm) %arg0) #0 {
+; CHECK-LABEL: define nofpclass(nan inf zero psub pnorm) float @ret_fpext_bf16_f32__negsubnormal__mode_ieee_ieee
+; CHECK-SAME: (bfloat nofpclass(nan inf zero psub norm) [[ARG0:%.*]]) #[[ATTR1]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__negsubnormal__mode_ieee_dapz(bfloat nofpclass(nan inf zero psub norm) %arg0) #1 {
+; CHECK-LABEL: define nofpclass(nan inf nzero psub pnorm) float @ret_fpext_bf16_f32__negsubnormal__mode_ieee_dapz
+; CHECK-SAME: (bfloat nofpclass(nan inf zero psub norm) [[ARG0:%.*]]) #[[ATTR2]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__negsubnormal__mode_ieee_dynamic(bfloat nofpclass(nan inf zero psub norm) %arg0) #2 {
+; CHECK-LABEL: define nofpclass(nan inf psub pnorm) float @ret_fpext_bf16_f32__negsubnormal__mode_ieee_dynamic
+; CHECK-SAME: (bfloat nofpclass(nan inf zero psub norm) [[ARG0:%.*]]) #[[ATTR3]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__negsubnormal__mode_ftpz_ieee(bfloat nofpclass(nan inf zero psub norm) %arg0) #3 {
+; CHECK-LABEL: define nofpclass(nan inf nzero psub pnorm) float @ret_fpext_bf16_f32__negsubnormal__mode_ftpz_ieee
+; CHECK-SAME: (bfloat nofpclass(nan inf zero psub norm) [[ARG0:%.*]]) #[[ATTR4]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__negsubnormal__mode_dynamic_ieee(bfloat nofpclass(nan inf zero psub norm) %arg0) #4 {
+; CHECK-LABEL: define nofpclass(nan inf psub pnorm) float @ret_fpext_bf16_f32__negsubnormal__mode_dynamic_ieee
+; CHECK-SAME: (bfloat nofpclass(nan inf zero psub norm) [[ARG0:%.*]]) #[[ATTR5]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__negsubnormal__mode_ftpz_dapz(bfloat nofpclass(nan inf zero psub norm) %arg0) #5 {
+; CHECK-LABEL: define nofpclass(nan inf nzero psub pnorm) float @ret_fpext_bf16_f32__negsubnormal__mode_ftpz_dapz
+; CHECK-SAME: (bfloat nofpclass(nan inf zero psub norm) [[ARG0:%.*]]) #[[ATTR6]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__negsubnormal__mode_dynamic_dynamic(bfloat nofpclass(nan inf zero psub norm) %arg0) #6 {
+; CHECK-LABEL: define nofpclass(nan inf psub pnorm) float @ret_fpext_bf16_f32__negsubnormal__mode_dynamic_dynamic
+; CHECK-SAME: (bfloat nofpclass(nan inf zero psub norm) [[ARG0:%.*]]) #[[ATTR7]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__negnormal_negsubnormal__mode_ieee_ieee(bfloat nofpclass(nan inf zero psub pnorm) %arg0) #0 {
+; CHECK-LABEL: define nofpclass(nan inf zero psub pnorm) float @ret_fpext_bf16_f32__negnormal_negsubnormal__mode_ieee_ieee
+; CHECK-SAME: (bfloat nofpclass(nan inf zero psub pnorm) [[ARG0:%.*]]) #[[ATTR1]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__negnormal_negsubnormal__mode_ieee_dapz(bfloat nofpclass(nan inf zero psub pnorm) %arg0) #1 {
+; CHECK-LABEL: define nofpclass(nan inf nzero psub pnorm) float @ret_fpext_bf16_f32__negnormal_negsubnormal__mode_ieee_dapz
+; CHECK-SAME: (bfloat nofpclass(nan inf zero psub pnorm) [[ARG0:%.*]]) #[[ATTR2]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__negnormal_negsubnormal__mode_ieee_dynamic(bfloat nofpclass(nan inf zero psub pnorm) %arg0) #2 {
+; CHECK-LABEL: define nofpclass(nan inf psub pnorm) float @ret_fpext_bf16_f32__negnormal_negsubnormal__mode_ieee_dynamic
+; CHECK-SAME: (bfloat nofpclass(nan inf zero psub pnorm) [[ARG0:%.*]]) #[[ATTR3]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__negnormal_negsubnormal__mode_ftpz_ieee(bfloat nofpclass(nan inf zero psub pnorm) %arg0) #3 {
+; CHECK-LABEL: define nofpclass(nan inf nzero psub pnorm) float @ret_fpext_bf16_f32__negnormal_negsubnormal__mode_ftpz_ieee
+; CHECK-SAME: (bfloat nofpclass(nan inf zero psub pnorm) [[ARG0:%.*]]) #[[ATTR4]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__negnormal_negsubnormal__mode_dynamic_ieee(bfloat nofpclass(nan inf zero psub pnorm) %arg0) #4 {
+; CHECK-LABEL: define nofpclass(nan inf psub pnorm) float @ret_fpext_bf16_f32__negnormal_negsubnormal__mode_dynamic_ieee
+; CHECK-SAME: (bfloat nofpclass(nan inf zero psub pnorm) [[ARG0:%.*]]) #[[ATTR5]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__negnormal_negsubnormal__mode_ftpz_dapz(bfloat nofpclass(nan inf zero psub pnorm) %arg0) #5 {
+; CHECK-LABEL: define nofpclass(nan inf nzero psub pnorm) float @ret_fpext_bf16_f32__negnormal_negsubnormal__mode_ftpz_dapz
+; CHECK-SAME: (bfloat nofpclass(nan inf zero psub pnorm) [[ARG0:%.*]]) #[[ATTR6]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+define float @ret_fpext_bf16_f32__negnormal_negsubnormal__mode_dynamic_dynamic(bfloat nofpclass(nan inf zero psub pnorm) %arg0) #6 {
+; CHECK-LABEL: define nofpclass(nan inf psub pnorm) float @ret_fpext_bf16_f32__negnormal_negsubnormal__mode_dynamic_dynamic
+; CHECK-SAME: (bfloat nofpclass(nan inf zero psub pnorm) [[ARG0:%.*]]) #[[ATTR7]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext bfloat [[ARG0]] to float
+; CHECK-NEXT:    ret float [[EXT]]
+;
+  %ext = fpext bfloat %arg0 to float
+  ret float %ext
+}
+
+; Every f32 subnormal is normal in f64, so no subnormal result survives and the
+; output mode cannot reintroduce a zero. The input mode still can, by flushing
+; the source to a zero before the conversion.
+
+define double @ret_fpext_f32_f64__no_zero__mode_ieee_ieee(float nofpclass(zero) %arg0) #0 {
+; CHECK-LABEL: define nofpclass(zero sub) double @ret_fpext_f32_f64__no_zero__mode_ieee_ieee
+; CHECK-SAME: (float nofpclass(zero) [[ARG0:%.*]]) #[[ATTR1]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext float [[ARG0]] to double
+; CHECK-NEXT:    ret double [[EXT]]
+;
+  %ext = fpext float %arg0 to double
+  ret double %ext
+}
+
+define double @ret_fpext_f32_f64__no_zero__mode_ieee_dapz(float nofpclass(zero) %arg0) #1 {
+; CHECK-LABEL: define nofpclass(nzero sub) double @ret_fpext_f32_f64__no_zero__mode_ieee_dapz
+; CHECK-SAME: (float nofpclass(zero) [[ARG0:%.*]]) #[[ATTR2]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext float [[ARG0]] to double
+; CHECK-NEXT:    ret double [[EXT]]
+;
+  %ext = fpext float %arg0 to double
+  ret double %ext
+}
+
+define double @ret_fpext_f32_f64__no_zero__mode_ieee_dynamic(float nofpclass(zero) %arg0) #2 {
+; CHECK-LABEL: define nofpclass(sub) double @ret_fpext_f32_f64__no_zero__mode_ieee_dynamic
+; CHECK-SAME: (float nofpclass(zero) [[ARG0:%.*]]) #[[ATTR3]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext float [[ARG0]] to double
+; CHECK-NEXT:    ret double [[EXT]]
+;
+  %ext = fpext float %arg0 to double
+  ret double %ext
+}
+
+define double @ret_fpext_f32_f64__no_zero__mode_ftpz_ieee(float nofpclass(zero) %arg0) #3 {
+; CHECK-LABEL: define nofpclass(zero sub) double @ret_fpext_f32_f64__no_zero__mode_ftpz_ieee
+; CHECK-SAME: (float nofpclass(zero) [[ARG0:%.*]]) #[[ATTR4]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext float [[ARG0]] to double
+; CHECK-NEXT:    ret double [[EXT]]
+;
+  %ext = fpext float %arg0 to double
+  ret double %ext
+}
+
+define double @ret_fpext_f32_f64__no_zero__mode_dynamic_ieee(float nofpclass(zero) %arg0) #4 {
+; CHECK-LABEL: define nofpclass(zero sub) double @ret_fpext_f32_f64__no_zero__mode_dynamic_ieee
+; CHECK-SAME: (float nofpclass(zero) [[ARG0:%.*]]) #[[ATTR5]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext float [[ARG0]] to double
+; CHECK-NEXT:    ret double [[EXT]]
+;
+  %ext = fpext float %arg0 to double
+  ret double %ext
+}
+
+define double @ret_fpext_f32_f64__no_zero__mode_ftpz_dapz(float nofpclass(zero) %arg0) #5 {
+; CHECK-LABEL: define nofpclass(nzero sub) double @ret_fpext_f32_f64__no_zero__mode_ftpz_dapz
+; CHECK-SAME: (float nofpclass(zero) [[ARG0:%.*]]) #[[ATTR6]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext float [[ARG0]] to double
+; CHECK-NEXT:    ret double [[EXT]]
+;
+  %ext = fpext float %arg0 to double
+  ret double %ext
+}
+
+define double @ret_fpext_f32_f64__no_zero__mode_dynamic_dynamic(float nofpclass(zero) %arg0) #6 {
+; CHECK-LABEL: define nofpclass(sub) double @ret_fpext_f32_f64__no_zero__mode_dynamic_dynamic
+; CHECK-SAME: (float nofpclass(zero) [[ARG0:%.*]]) #[[ATTR7]] {
+; CHECK-NEXT:    [[EXT:%.*]] = fpext float [[ARG0]] to double
+; CHECK-NEXT:    ret double [[EXT]]
+;
+  %ext = fpext float %arg0 to double
+  ret double %ext
+}
+
+attributes #0 = { denormal_fpenv(ieee|ieee) }
+attributes #1 = { denormal_fpenv(ieee|positivezero) }
+attributes #2 = { denormal_fpenv(ieee|dynamic) }
+attributes #3 = { denormal_fpenv(positivezero|ieee) }
+attributes #4 = { denormal_fpenv(dynamic|ieee) }
+attributes #5 = { denormal_fpenv(positivezero|positivezero) }
+attributes #6 = { denormal_fpenv(dynamic|dynamic) }
 
 ;; NOTE: These prefixes are unused and the list is autogenerated. Do not add tests below this line:
 ; TUNIT: {{.*}}

@@ -991,13 +991,13 @@ KnownFPClass KnownFPClass::atan2(const KnownFPClass &KnownY_,
   return applyOutputDenormalMode(Known, Mode);
 }
 
-static KnownFPClass fpconvert(const KnownFPClass &KnownSrc,
+static KnownFPClass fpconvert(const KnownFPClass &KnownSrc_,
                               const fltSemantics &DstSem,
                               const fltSemantics &SrcSem, DenormalMode Mode) {
   KnownFPClass Known;
   APFloatBase::Semantics DstType = APFloatBase::SemanticsToEnum(DstSem);
   APFloatBase::Semantics SrcType = APFloatBase::SemanticsToEnum(SrcSem);
-  auto isSupported = [](auto SemType) -> bool {
+  auto IsSupported = [](APFloatBase::Semantics SemType) -> bool {
     switch (SemType) {
     case APFloatBase::S_IEEEhalf:
     case APFloatBase::S_BFloat:
@@ -1012,22 +1012,27 @@ static KnownFPClass fpconvert(const KnownFPClass &KnownSrc,
   };
 
   // Return unknown for types we have not validated.
-  if (!isSupported(SrcType) || !isSupported(DstType))
+  // TODO: Add support for lossless casts to PPCDoubleDouble.
+  if (!IsSupported(SrcType) || !IsSupported(DstType))
     return Known;
 
-  Known.propagateNonNaN(KnownSrc);
+  // TODO: Until we pass the rounding mode into fpconvert, the rounding mode is
+  // assumed to be dynamic. This includes potential future rounding modes such
+  // as roundAwayZero (not the same as roundNearestTiesAway) and roundToOdd
+  // (jamming).
 
-  const bool NonZeroFiniteSrcIsNormalInDst =
-      APFloat::isRepresentableAsNormalIn(SrcSem, DstSem);
+  KnownFPClass KnownSrc = KnownFPClass::applyInputDenormalMode(KnownSrc_, Mode);
+
+  Known.propagateNonNaN(KnownSrc);
 
   const bool NormalSrcIsFiniteDst = DstSem.maxExponent > SrcSem.maxExponent ||
                                     (DstSem.maxExponent == SrcSem.maxExponent &&
                                      DstSem.precision >= SrcSem.precision);
 
-  const bool KnownNeverNonZeroPosFinite =
-      KnownSrc.isKnownNever(fcPosNormal | fcPosSubnormal);
-  const bool KnownNeverNonZeroNegFinite =
-      KnownSrc.isKnownNever(fcNegNormal | fcNegSubnormal);
+  // True if the dst can represent all non-zero finite values of src.
+  const bool NonZeroFiniteSrcIsNonZeroInDst =
+      DstSem.minExponent <= SrcSem.minExponent &&
+      DstSem.precision >= SrcSem.precision;
 
   // Rule out infinity.
   // We are assuming that subnormal values have a magnitude less than 1.0.
@@ -1038,38 +1043,39 @@ static KnownFPClass fpconvert(const KnownFPClass &KnownSrc,
       (KnownSrc.isKnownNever(fcNegNormal) || NormalSrcIsFiniteDst))
     Known.knownNot(fcNegInf);
 
-  // Rule out normal.
-  if (KnownNeverNonZeroPosFinite)
-    Known.knownNot(fcPosNormal);
-  if (KnownNeverNonZeroNegFinite)
-    Known.knownNot(fcNegNormal);
+  // Rule out non-zero finite.
+  if (KnownSrc.isKnownNever(fcPosNormal | fcPosSubnormal))
+    Known.knownNot(fcPosNormal | fcPosSubnormal);
+  if (KnownSrc.isKnownNever(fcNegNormal | fcNegSubnormal))
+    Known.knownNot(fcNegNormal | fcNegSubnormal);
 
   // Rule out subnormal.
-  if (NonZeroFiniteSrcIsNormalInDst) {
+  if (APFloat::isRepresentableAsNormalIn(SrcSem, DstSem))
     Known.knownNot(fcSubnormal);
-  } else {
-    if (KnownNeverNonZeroPosFinite)
-      Known.knownNot(fcPosSubnormal);
-    if (KnownNeverNonZeroNegFinite)
-      Known.knownNot(fcNegSubnormal);
-  }
 
   // Rule out positive zero.
-  if (KnownSrc.isKnownNeverLogicalPosZero(Mode) &&
-      (KnownNeverNonZeroPosFinite || NonZeroFiniteSrcIsNormalInDst))
+  if (KnownSrc.isKnownNever(fcPosZero) &&
+      (KnownSrc.isKnownNever(fcPosNormal | fcPosSubnormal) ||
+       NonZeroFiniteSrcIsNonZeroInDst))
     Known.knownNot(fcPosZero);
 
   // Rule out negative zero.
-  if (KnownSrc.isKnownNeverLogicalNegZero(Mode) &&
-      (KnownNeverNonZeroNegFinite || NonZeroFiniteSrcIsNormalInDst))
+  if (KnownSrc.isKnownNever(fcNegZero) &&
+      (KnownSrc.isKnownNever(fcNegNormal | fcNegSubnormal) ||
+       NonZeroFiniteSrcIsNonZeroInDst))
     Known.knownNot(fcNegZero);
 
-  return Known;
+  return KnownFPClass::applyOutputDenormalMode(Known, Mode);
 }
 
 KnownFPClass KnownFPClass::fpext(const KnownFPClass &KnownSrc,
                                  const fltSemantics &DstTy,
                                  const fltSemantics &SrcTy, DenormalMode Mode) {
+  // Note that fpext may round for some bizarre type combinations.
+  // Such as ieee_binary256 = fpext(PPCDoubleDouble) if we add support for
+  // ieee_binary256 in the future. PPCDoubleDouble can represent values such as
+  // DBL_MAX + DBL_TRUE_MIN which would normally require 2098 bits of precision
+  // to represent.
   return fpconvert(KnownSrc, DstTy, SrcTy, Mode);
 }
 
@@ -1077,6 +1083,7 @@ KnownFPClass KnownFPClass::fptrunc(const KnownFPClass &KnownSrc,
                                    const fltSemantics &DstTy,
                                    const fltSemantics &SrcTy,
                                    DenormalMode Mode) {
+  // TODO: pass rounding mode from fptrunc_round
   return fpconvert(KnownSrc, DstTy, SrcTy, Mode);
 }
 
