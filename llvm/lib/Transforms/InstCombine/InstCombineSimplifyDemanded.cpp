@@ -2369,6 +2369,11 @@ simplifyDemandedUseFPClassFPTrunc(InstCombinerImpl &IC, Instruction &I,
                                   FastMathFlags FMF, FPClassTest DemandedMask,
                                   KnownFPClass &Known, const SimplifyQuery &SQ,
                                   unsigned Depth) {
+  const fltSemantics &SrcTy =
+      I.getOperand(0)->getType()->getScalarType()->getFltSemantics();
+  const Function *F = I.getFunction();
+  DenormalMode Mode =
+      F ? F->getDenormalMode(SrcTy) : DenormalMode::getDynamic();
 
   FPClassTest SrcDemandedMask = DemandedMask;
   if (DemandedMask & fcNan)
@@ -2377,8 +2382,13 @@ simplifyDemandedUseFPClassFPTrunc(InstCombinerImpl &IC, Instruction &I,
   // Zero results may have been rounded from subnormal or normal sources.
   if (DemandedMask & fcNegZero)
     SrcDemandedMask |= fcNegSubnormal | fcNegNormal;
-  if (DemandedMask & fcPosZero)
+  if (DemandedMask & fcPosZero) {
     SrcDemandedMask |= fcPosSubnormal | fcPosNormal;
+    if (Mode.inputsMayBePositiveZero())
+      SrcDemandedMask |= fcNegSubnormal;
+    if (Mode.outputsMayBePositiveZero())
+      SrcDemandedMask |= fcNegSubnormal | fcNegNormal;
+  }
 
   // Subnormal results may have been normal in the source type
   if (DemandedMask & fcNegSubnormal)
@@ -2397,12 +2407,6 @@ simplifyDemandedUseFPClassFPTrunc(InstCombinerImpl &IC, Instruction &I,
     return &I;
 
   const fltSemantics &DstTy = I.getType()->getScalarType()->getFltSemantics();
-  const fltSemantics &SrcTy =
-      I.getOperand(0)->getType()->getScalarType()->getFltSemantics();
-
-  const Function *F = I.getFunction();
-  DenormalMode Mode =
-      F ? F->getDenormalMode(SrcTy) : DenormalMode::getDynamic();
 
   Known = KnownFPClass::fptrunc(KnownSrc, DstTy, SrcTy, Mode);
   Known.knownNot(~DemandedMask);
@@ -2902,11 +2906,14 @@ Value *InstCombinerImpl::SimplifyDemandedUseFPClass(Instruction *I,
     if ((DemandedMask & fcPosNormal) != fcNone)
       SrcDemandedMask |= fcPosSubnormal;
 
+    const fltSemantics &DstTy = VTy->getScalarType()->getFltSemantics();
+    if (&DstTy == &APFloat::PPCDoubleDouble())
+      SrcDemandedMask |= fcPositive | fcNegative;
+
     KnownFPClass KnownSrc;
     if (SimplifyDemandedFPClass(I, 0, SrcDemandedMask, KnownSrc, SQ, Depth + 1))
       return I;
 
-    const fltSemantics &DstTy = VTy->getScalarType()->getFltSemantics();
     const fltSemantics &SrcTy =
         I->getOperand(0)->getType()->getScalarType()->getFltSemantics();
 

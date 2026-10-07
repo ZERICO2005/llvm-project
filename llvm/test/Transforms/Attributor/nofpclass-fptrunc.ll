@@ -690,9 +690,8 @@ define bfloat @ret_fptrunc_f32_bf16__negnormal_negsubnormal__mode_dynamic_dynami
   ret bfloat %trunc
 }
 
-; The rounding-mode intrinsic has the same denormal mode exposure as a plain
-; fptrunc: a negative subnormal result may be flushed to +0.0, so pzero must
-; stay live.
+; A negative subnormal result may be flushed to +0.0, so we may not be able to
+; rule out pzero based on the output denormal mode.
 
 define float @ret_fptrunc_round_f64_f32__negnormal__mode_ieee_ieee(double nofpclass(nan inf zero sub pnorm) %arg0) #2 {
 ; CHECK-LABEL: define nofpclass(nan pinf pzero psub pnorm) float @ret_fptrunc_round_f64_f32__negnormal__mode_ieee_ieee
