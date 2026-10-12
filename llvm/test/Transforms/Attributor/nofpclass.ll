@@ -2322,13 +2322,13 @@ define double @wrong_context_function_issue178954(i1 %cond) {
 ; CGSCC-LABEL: define noundef nofpclass(nan inf nzero sub norm) double @wrong_context_function_issue178954
 ; CGSCC-SAME: (i1 [[COND:%.*]]) #[[ATTR4]] {
 ; CGSCC-NEXT:  entry:
-; CGSCC-NEXT:    [[FMA:%.*]] = tail call nofpclass(nan inf sub norm) double @llvm.fma.f64(double noundef nofpclass(nan inf zero sub nnorm) 1.000000e+00, double noundef nofpclass(nan inf nzero sub norm) 0.000000e+00, double noundef nofpclass(nan inf nzero sub norm) 0.000000e+00) #[[ATTR15]]
+; CGSCC-NEXT:    [[FMA:%.*]] = tail call nofpclass(nan pinf psub pnorm) double @llvm.fma.f64(double noundef nofpclass(nan inf zero sub nnorm) 1.000000e+00, double noundef nofpclass(nan inf nzero sub norm) 0.000000e+00, double noundef nofpclass(nan inf nzero sub norm) 0.000000e+00) #[[ATTR15]]
 ; CGSCC-NEXT:    [[COND_I:%.*]] = select i1 [[COND]], double 0.000000e+00, double [[FMA]]
 ; CGSCC-NEXT:    [[ADD_I46_I:%.*]] = fadd double [[COND_I]], 0.000000e+00
 ; CGSCC-NEXT:    [[ADD_I_I33:%.*]] = fadd double 0.000000e+00, [[ADD_I46_I]]
 ; CGSCC-NEXT:    [[ADD_I_I_I39:%.*]] = fadd double [[ADD_I_I33]], 0.000000e+00
 ; CGSCC-NEXT:    [[VECINIT1_I_I_I_I43:%.*]] = insertelement <2 x double> zeroinitializer, double [[ADD_I_I_I39]], i64 0
-; CGSCC-NEXT:    [[CALL7:%.*]] = call noundef nofpclass(nan inf nzero sub norm) double @issue178954_callee(<2 x double> nofpclass(nan inf nzero sub norm) [[VECINIT1_I_I_I_I43]]) #[[ATTR15]]
+; CGSCC-NEXT:    [[CALL7:%.*]] = call noundef nofpclass(nan inf nzero sub norm) double @issue178954_callee(<2 x double> nofpclass(nan pinf nzero psub pnorm) [[VECINIT1_I_I_I_I43]]) #[[ATTR15]]
 ; CGSCC-NEXT:    ret double [[CALL7]]
 ;
 entry:

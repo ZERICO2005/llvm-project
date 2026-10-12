@@ -547,17 +547,6 @@ KnownFPClass KnownFPClass::fmul(const KnownFPClass &KnownLHS_,
 
   Known.propagateNonSNaN(KnownLHS, KnownRHS);
 
-  // +X * +Y or -X * -Y => +Q
-  // +X * -Y or -X * +Y => -Q
-  if ((KnownLHS.isKnownNever(fcNegative) &&
-       KnownRHS.isKnownNever(fcNegative)) ||
-      (KnownLHS.isKnownNever(fcPositive) && KnownRHS.isKnownNever(fcPositive)))
-    Known.knownNot(fcNegInf | fcNegZero);
-  if ((KnownLHS.isKnownNever(fcPositive) &&
-       KnownRHS.isKnownNever(fcNegative)) ||
-      (KnownLHS.isKnownNever(fcNegative) && KnownRHS.isKnownNever(fcPositive)))
-    Known.knownNot(fcPosInf | fcPosZero);
-
   // Normal and subnormal results require two non-zero finite operands.
   if ((KnownLHS.isKnownNever(fcPosSubnormal | fcPosNormal) ||
        KnownRHS.isKnownNever(fcPosSubnormal | fcPosNormal)) &&
@@ -570,17 +559,31 @@ KnownFPClass KnownFPClass::fmul(const KnownFPClass &KnownLHS_,
        KnownRHS.isKnownNever(fcPosSubnormal | fcPosNormal)))
     Known.knownNot(fcNegSubnormal | fcNegNormal);
 
-  // Inf * Y => Inf or NaN
-  if (KnownLHS.isKnownAlways(fcInf | fcNan) ||
-      KnownRHS.isKnownAlways(fcInf | fcNan))
-    Known.knownNot(fcZero);
+  // Rule out infinity.
+  if ((KnownLHS.isKnownNever(fcPosSubnormal | fcPosNormal | fcPosInf) ||
+       KnownRHS.isKnownNever(fcPosSubnormal | fcPosNormal | fcPosInf)) &&
+      (KnownLHS.isKnownNever(fcNegSubnormal | fcNegNormal | fcNegInf) ||
+       KnownRHS.isKnownNever(fcNegSubnormal | fcNegNormal | fcNegInf)))
+    Known.knownNot(fcPosInf);
+  if ((KnownLHS.isKnownNever(fcPosSubnormal | fcPosNormal | fcPosInf) ||
+       KnownRHS.isKnownNever(fcNegSubnormal | fcNegNormal | fcNegInf)) &&
+      (KnownLHS.isKnownNever(fcNegSubnormal | fcNegNormal | fcNegInf) ||
+       KnownRHS.isKnownNever(fcPosSubnormal | fcPosNormal | fcPosInf)))
+    Known.knownNot(fcNegInf);
 
-  // 0 * Y => 0 or NaN
-  if (KnownRHS.isKnownAlways(fcZero | fcNan) ||
-      KnownLHS.isKnownAlways(fcZero | fcNan))
-    Known.knownNot(fcInf);
+  // Rule out zero.
+  if ((KnownLHS.isKnownNever(fcPosFinite) ||
+       KnownRHS.isKnownNever(fcPosFinite)) &&
+      (KnownLHS.isKnownNever(fcNegFinite) ||
+       KnownRHS.isKnownNever(fcNegFinite)))
+    Known.knownNot(fcPosZero);
+  if ((KnownLHS.isKnownNever(fcPosFinite) ||
+       KnownRHS.isKnownNever(fcNegFinite)) &&
+      (KnownLHS.isKnownNever(fcNegFinite) ||
+       KnownRHS.isKnownNever(fcPosFinite)))
+    Known.knownNot(fcNegZero);
 
-  // 0 * +/-inf => NaN
+  // NaN is generated from 0.0 * inf and inf * 0.0.
   if (KnownLHS.isKnownNeverNaN() && KnownRHS.isKnownNeverNaN() &&
       (KnownRHS.isKnownNeverInfinity() || KnownLHS.isKnownNeverZero()) &&
       (KnownLHS.isKnownNeverInfinity() || KnownRHS.isKnownNeverZero()))
@@ -635,17 +638,6 @@ KnownFPClass KnownFPClass::fdiv(const KnownFPClass &KnownLHS_,
     Known.knownNot(fcNan);
   }
 
-  // +X / +Y or -X / -Y => +Q
-  // +X / -Y or -X / +Y => -Q
-  if ((KnownLHS.isKnownNever(fcNegative) &&
-       KnownRHS.isKnownNever(fcNegative)) ||
-      (KnownLHS.isKnownNever(fcPositive) && KnownRHS.isKnownNever(fcPositive)))
-    Known.knownNot(fcNegInf | fcNegZero);
-  if ((KnownLHS.isKnownNever(fcPositive) &&
-       KnownRHS.isKnownNever(fcNegative)) ||
-      (KnownLHS.isKnownNever(fcNegative) && KnownRHS.isKnownNever(fcPositive)))
-    Known.knownNot(fcPosInf | fcPosZero);
-
   // Normal and subnormal results require two non-zero finite operands.
   if ((KnownLHS.isKnownNever(fcPosSubnormal | fcPosNormal) ||
        KnownRHS.isKnownNever(fcPosSubnormal | fcPosNormal)) &&
@@ -658,13 +650,29 @@ KnownFPClass KnownFPClass::fdiv(const KnownFPClass &KnownLHS_,
        KnownRHS.isKnownNever(fcPosSubnormal | fcPosNormal)))
     Known.knownNot(fcNegSubnormal | fcNegNormal);
 
-  // 0 / X => 0 or NaN
-  if (KnownLHS.isKnownAlways(fcZero))
-    Known.knownNot(fcInf);
+  // Rule out infinity.
+  if ((KnownLHS.isKnownNever(fcPosSubnormal | fcPosNormal | fcPosInf) ||
+       KnownRHS.isKnownNever(fcPosFinite)) &&
+      (KnownLHS.isKnownNever(fcNegSubnormal | fcNegNormal | fcNegInf) ||
+       KnownRHS.isKnownNever(fcNegFinite)))
+    Known.knownNot(fcPosInf);
+  if ((KnownLHS.isKnownNever(fcPosSubnormal | fcPosNormal | fcPosInf) ||
+       KnownRHS.isKnownNever(fcNegFinite)) &&
+      (KnownLHS.isKnownNever(fcNegSubnormal | fcNegNormal | fcNegInf) ||
+       KnownRHS.isKnownNever(fcPosFinite)))
+    Known.knownNot(fcNegInf);
 
-  // X / 0 => NaN or Inf
-  if (KnownRHS.isKnownAlways(fcZero))
-    Known.knownNot(fcZero);
+  // Rule out zero.
+  if ((KnownLHS.isKnownNever(fcPosFinite) ||
+       KnownRHS.isKnownNever(fcPosSubnormal | fcPosNormal | fcPosInf)) &&
+      (KnownLHS.isKnownNever(fcNegFinite) ||
+       KnownRHS.isKnownNever(fcNegSubnormal | fcNegNormal | fcNegInf)))
+    Known.knownNot(fcPosZero);
+  if ((KnownLHS.isKnownNever(fcPosFinite) ||
+       KnownRHS.isKnownNever(fcNegSubnormal | fcNegNormal | fcNegInf)) &&
+      (KnownLHS.isKnownNever(fcNegFinite) ||
+       KnownRHS.isKnownNever(fcPosSubnormal | fcPosNormal | fcPosInf)))
+    Known.knownNot(fcNegZero);
 
   return applyOutputDenormalMode(Known, Mode);
 }

@@ -195,7 +195,7 @@ define float @ret_fmul_square_nnan_nzero(float noundef nofpclass(nan zero) %arg)
 }
 
 define float @ret_fmul_ieee_inf(float %arg) {
-; CHECK-LABEL: define nofpclass(zero sub norm) float @ret_fmul_ieee_inf
+; CHECK-LABEL: define nofpclass(zero sub pnorm) float @ret_fmul_ieee_inf
 ; CHECK-SAME: (float [[ARG:%.*]]) #[[ATTR4:[0-9]+]] {
 ; CHECK-NEXT:    [[FMUL:%.*]] = fmul float [[ARG]], +inf
 ; CHECK-NEXT:    ret float [[FMUL]]

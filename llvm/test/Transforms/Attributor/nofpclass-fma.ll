@@ -140,11 +140,11 @@ define half @ret_fma__pos0__neg1__neg2() {
 
 ; 3. operand0=positive, operand1=positive, operand2=positive
 define half @ret_fma__pos0__pos1__pos2() {
-; CHECK-LABEL: define nofpclass(ninf nsub nnorm) half @ret_fma__pos0__pos1__pos2() {
+; CHECK-LABEL: define half @ret_fma__pos0__pos1__pos2() {
 ; CHECK-NEXT:    [[POS0:%.*]] = call half @returns_positive_or_nan()
 ; CHECK-NEXT:    [[POS1:%.*]] = call half @returns_positive_or_nan()
 ; CHECK-NEXT:    [[POS2:%.*]] = call half @returns_positive_or_nan()
-; CHECK-NEXT:    [[RESULT:%.*]] = call nofpclass(ninf nsub nnorm) half @llvm.fma.f16(half [[POS0]], half [[POS1]], half [[POS2]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call half @llvm.fma.f16(half [[POS0]], half [[POS1]], half [[POS2]])
 ; CHECK-NEXT:    ret half [[RESULT]]
 ;
   %pos0 = call half @returns_positive_or_nan()
@@ -172,11 +172,11 @@ define half @ret_fma__pos0__pos1__neg2() {
 
 ; 5. operand0=negative, operand1=negative, operand2=positive
 define half @ret_fma__neg0__neg1__pos2() {
-; CHECK-LABEL: define nofpclass(ninf nsub nnorm) half @ret_fma__neg0__neg1__pos2() {
+; CHECK-LABEL: define half @ret_fma__neg0__neg1__pos2() {
 ; CHECK-NEXT:    [[NEG0:%.*]] = call half @returns_negative_or_nan()
 ; CHECK-NEXT:    [[NEG1:%.*]] = call half @returns_negative_or_nan()
 ; CHECK-NEXT:    [[POS2:%.*]] = call half @returns_positive_or_nan()
-; CHECK-NEXT:    [[RESULT:%.*]] = call nofpclass(ninf nsub nnorm) half @llvm.fma.f16(half [[NEG0]], half [[NEG1]], half [[POS2]])
+; CHECK-NEXT:    [[RESULT:%.*]] = call half @llvm.fma.f16(half [[NEG0]], half [[NEG1]], half [[POS2]])
 ; CHECK-NEXT:    ret half [[RESULT]]
 ;
   %neg0 = call half @returns_negative_or_nan()
