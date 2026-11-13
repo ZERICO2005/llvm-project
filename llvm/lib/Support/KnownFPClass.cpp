@@ -903,10 +903,7 @@ KnownFPClass KnownFPClass::log(const KnownFPClass &KnownSrc, DenormalMode Mode,
 
 KnownFPClass KnownFPClass::sqrt(const KnownFPClass &KnownSrc_,
                                 DenormalMode Mode, bool MayBeNSZ) {
-  KnownFPClass KnownSrc = applyInputDenormalMode(KnownSrc_, Mode);
-
-  if (!KnownSrc.isKnownNever(fcZero) && MayBeNSZ)
-    KnownSrc |= fcZero;
+  KnownFPClass KnownSrc = applyInputSemantics(KnownSrc_, Mode, MayBeNSZ);
 
   KnownFPClass Known;
   Known.knownNot(fcPosSubnormal);
