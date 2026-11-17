@@ -1658,6 +1658,38 @@ body:             |
     %copy:_(f32) = COPY %fmul
 ...
 ---
+name:            IntrinsicTruncNSZ
+body:             |
+  bb.0:
+  ; CHECK-LABEL: name: @IntrinsicTruncNSZ
+  ; CHECK-NEXT: %ptr:_ FPClasses:(all) SignBitKnown:?
+  ; CHECK-NEXT: %val:_ FPClasses:(all) SignBitKnown:?
+  ; CHECK-NEXT: %abs:_ FPClasses:(nan pinf pzero psub pnorm) SignBitKnown:0
+  ; CHECK-NEXT: %trunc:_ FPClasses:(nan pinf pzero pnorm) SignBitKnown:?
+  ; CHECK-NEXT: %copy:_ FPClasses:(nan pinf pzero pnorm) SignBitKnown:?
+    %ptr:_(p0) = G_IMPLICIT_DEF
+    %val:_(f32) = G_LOAD %ptr(p0) :: (load (f32))
+    %abs:_(f32) = G_FABS %val
+    %trunc:_(f32) = nsz G_INTRINSIC_TRUNC %abs
+    %copy:_(f32) = COPY %trunc
+...
+---
+name:            FRintNSZ
+body:             |
+  bb.0:
+  ; CHECK-LABEL: name: @FRintNSZ
+  ; CHECK-NEXT: %ptr:_ FPClasses:(all) SignBitKnown:?
+  ; CHECK-NEXT: %val:_ FPClasses:(all) SignBitKnown:?
+  ; CHECK-NEXT: %abs:_ FPClasses:(nan pinf pzero psub pnorm) SignBitKnown:0
+  ; CHECK-NEXT: %rint:_ FPClasses:(nan pinf pzero pnorm) SignBitKnown:?
+  ; CHECK-NEXT: %copy:_ FPClasses:(nan pinf pzero pnorm) SignBitKnown:?
+    %ptr:_(p0) = G_IMPLICIT_DEF
+    %val:_(f32) = G_LOAD %ptr(p0) :: (load (f32))
+    %abs:_(f32) = G_FABS %val
+    %rint:_(f32) = nsz G_FRINT %abs
+    %copy:_(f32) = COPY %rint
+...
+---
 name:            FMASelfSquare
 body:             |
   bb.0:
