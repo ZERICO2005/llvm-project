@@ -1795,18 +1795,21 @@ void GISelValueTracking::computeKnownFPClass(Register R,
     DenormalMode Mode = MF->getDenormalMode(FltSem);
     const bool IsMultiUnitFPType = &FltSem == &APFloat::PPCDoubleDouble();
 
+    const bool HasNSZ = MI.getFlag(MachineInstr::MIFlag::FmNsz);
+
     switch (Opcode) {
     case TargetOpcode::G_INTRINSIC_TRUNC:
-      Known = KnownFPClass::trunc(KnownSrc, Mode);
+      Known = KnownFPClass::trunc(KnownSrc, Mode, HasNSZ);
       break;
     case TargetOpcode::G_FFLOOR:
-      Known = KnownFPClass::floor(KnownSrc, IsMultiUnitFPType, Mode);
+      Known = KnownFPClass::floor(KnownSrc, IsMultiUnitFPType, Mode, HasNSZ);
       break;
     case TargetOpcode::G_FCEIL:
-      Known = KnownFPClass::ceil(KnownSrc, IsMultiUnitFPType, Mode);
+      Known = KnownFPClass::ceil(KnownSrc, IsMultiUnitFPType, Mode, HasNSZ);
       break;
     default:
-      Known = KnownFPClass::roundToIntegral(KnownSrc, IsMultiUnitFPType, Mode);
+      Known = KnownFPClass::roundToIntegral(KnownSrc, IsMultiUnitFPType, Mode,
+                                            HasNSZ);
       break;
     }
     break;

@@ -586,9 +586,9 @@ define float @ret_nearbyint_possubnormal_mode_dynamic_dynamic(float nofpclass(na
 ;-------------------------------------------------------------------------------
 
 define float @ret_trunc_nsz__qnan_nsub__ieee_daz(float nofpclass(snan inf zero psub norm) %arg) #4 {
-; CHECK-LABEL: define nofpclass(snan inf pzero sub norm) float @ret_trunc_nsz__qnan_nsub__ieee_daz(
+; CHECK-LABEL: define nofpclass(snan inf sub norm) float @ret_trunc_nsz__qnan_nsub__ieee_daz(
 ; CHECK-SAME: float nofpclass(snan inf zero psub norm) [[ARG:%.*]]) #[[ATTR5:[0-9]+]] {
-; CHECK-NEXT:    [[RESULT:%.*]] = call nsz nofpclass(snan inf pzero sub norm) float @llvm.trunc.f32(float nofpclass(snan inf zero psub norm) [[ARG]]) #[[ATTR6]]
+; CHECK-NEXT:    [[RESULT:%.*]] = call nsz nofpclass(snan inf sub norm) float @llvm.trunc.f32(float nofpclass(snan inf zero psub norm) [[ARG]]) #[[ATTR6]]
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call nsz float @llvm.trunc.f32(float %arg)
@@ -596,9 +596,9 @@ define float @ret_trunc_nsz__qnan_nsub__ieee_daz(float nofpclass(snan inf zero p
 }
 
 define float @ret_floor_nsz__qnan_nsub__ieee_daz(float nofpclass(snan inf zero psub norm) %arg) #4 {
-; CHECK-LABEL: define nofpclass(snan inf pzero sub pnorm) float @ret_floor_nsz__qnan_nsub__ieee_daz(
+; CHECK-LABEL: define nofpclass(snan inf sub pnorm) float @ret_floor_nsz__qnan_nsub__ieee_daz(
 ; CHECK-SAME: float nofpclass(snan inf zero psub norm) [[ARG:%.*]]) #[[ATTR5]] {
-; CHECK-NEXT:    [[RESULT:%.*]] = call nsz nofpclass(snan inf pzero sub pnorm) float @llvm.floor.f32(float nofpclass(snan inf zero psub norm) [[ARG]]) #[[ATTR6]]
+; CHECK-NEXT:    [[RESULT:%.*]] = call nsz nofpclass(snan inf sub pnorm) float @llvm.floor.f32(float nofpclass(snan inf zero psub norm) [[ARG]]) #[[ATTR6]]
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call nsz float @llvm.floor.f32(float %arg)
@@ -606,9 +606,9 @@ define float @ret_floor_nsz__qnan_nsub__ieee_daz(float nofpclass(snan inf zero p
 }
 
 define float @ret_ceil_nsz__qnan_nsub__ieee_daz(float nofpclass(snan inf zero psub norm) %arg) #4 {
-; CHECK-LABEL: define nofpclass(snan inf pzero sub norm) float @ret_ceil_nsz__qnan_nsub__ieee_daz(
+; CHECK-LABEL: define nofpclass(snan inf sub norm) float @ret_ceil_nsz__qnan_nsub__ieee_daz(
 ; CHECK-SAME: float nofpclass(snan inf zero psub norm) [[ARG:%.*]]) #[[ATTR5]] {
-; CHECK-NEXT:    [[RESULT:%.*]] = call nsz nofpclass(snan inf pzero sub norm) float @llvm.ceil.f32(float nofpclass(snan inf zero psub norm) [[ARG]]) #[[ATTR6]]
+; CHECK-NEXT:    [[RESULT:%.*]] = call nsz nofpclass(snan inf sub norm) float @llvm.ceil.f32(float nofpclass(snan inf zero psub norm) [[ARG]]) #[[ATTR6]]
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call nsz float @llvm.ceil.f32(float %arg)
@@ -616,9 +616,9 @@ define float @ret_ceil_nsz__qnan_nsub__ieee_daz(float nofpclass(snan inf zero ps
 }
 
 define float @ret_round_nsz__qnan_nsub__ieee_daz(float nofpclass(snan inf zero psub norm) %arg) #4 {
-; CHECK-LABEL: define nofpclass(snan inf pzero sub pnorm) float @ret_round_nsz__qnan_nsub__ieee_daz(
+; CHECK-LABEL: define nofpclass(snan inf sub pnorm) float @ret_round_nsz__qnan_nsub__ieee_daz(
 ; CHECK-SAME: float nofpclass(snan inf zero psub norm) [[ARG:%.*]]) #[[ATTR5]] {
-; CHECK-NEXT:    [[RESULT:%.*]] = call nsz nofpclass(snan inf pzero sub pnorm) float @llvm.round.f32(float nofpclass(snan inf zero psub norm) [[ARG]]) #[[ATTR6]]
+; CHECK-NEXT:    [[RESULT:%.*]] = call nsz nofpclass(snan inf sub pnorm) float @llvm.round.f32(float nofpclass(snan inf zero psub norm) [[ARG]]) #[[ATTR6]]
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call nsz float @llvm.round.f32(float %arg)
@@ -626,9 +626,9 @@ define float @ret_round_nsz__qnan_nsub__ieee_daz(float nofpclass(snan inf zero p
 }
 
 define float @ret_roundeven_nsz__qnan_nsub__ieee_daz(float nofpclass(snan inf zero psub norm) %arg) #4 {
-; CHECK-LABEL: define nofpclass(snan inf pzero sub pnorm) float @ret_roundeven_nsz__qnan_nsub__ieee_daz(
+; CHECK-LABEL: define nofpclass(snan inf sub pnorm) float @ret_roundeven_nsz__qnan_nsub__ieee_daz(
 ; CHECK-SAME: float nofpclass(snan inf zero psub norm) [[ARG:%.*]]) #[[ATTR5]] {
-; CHECK-NEXT:    [[RESULT:%.*]] = call nsz nofpclass(snan inf pzero sub pnorm) float @llvm.roundeven.f32(float nofpclass(snan inf zero psub norm) [[ARG]]) #[[ATTR6]]
+; CHECK-NEXT:    [[RESULT:%.*]] = call nsz nofpclass(snan inf sub pnorm) float @llvm.roundeven.f32(float nofpclass(snan inf zero psub norm) [[ARG]]) #[[ATTR6]]
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call nsz float @llvm.roundeven.f32(float %arg)
@@ -636,9 +636,9 @@ define float @ret_roundeven_nsz__qnan_nsub__ieee_daz(float nofpclass(snan inf ze
 }
 
 define float @ret_rint_nsz__qnan_nsub__ieee_daz(float nofpclass(snan inf zero psub norm) %arg) #4 {
-; CHECK-LABEL: define nofpclass(snan inf pzero sub pnorm) float @ret_rint_nsz__qnan_nsub__ieee_daz(
+; CHECK-LABEL: define nofpclass(snan inf sub pnorm) float @ret_rint_nsz__qnan_nsub__ieee_daz(
 ; CHECK-SAME: float nofpclass(snan inf zero psub norm) [[ARG:%.*]]) #[[ATTR5]] {
-; CHECK-NEXT:    [[RESULT:%.*]] = call nsz nofpclass(snan inf pzero sub pnorm) float @llvm.rint.f32(float nofpclass(snan inf zero psub norm) [[ARG]]) #[[ATTR6]]
+; CHECK-NEXT:    [[RESULT:%.*]] = call nsz nofpclass(snan inf sub pnorm) float @llvm.rint.f32(float nofpclass(snan inf zero psub norm) [[ARG]]) #[[ATTR6]]
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call nsz float @llvm.rint.f32(float %arg)
@@ -646,9 +646,9 @@ define float @ret_rint_nsz__qnan_nsub__ieee_daz(float nofpclass(snan inf zero ps
 }
 
 define float @ret_nearbyint_nsz__qnan_nsub__ieee_daz(float nofpclass(snan inf zero psub norm) %arg) #4 {
-; CHECK-LABEL: define nofpclass(snan inf pzero sub pnorm) float @ret_nearbyint_nsz__qnan_nsub__ieee_daz(
+; CHECK-LABEL: define nofpclass(snan inf sub pnorm) float @ret_nearbyint_nsz__qnan_nsub__ieee_daz(
 ; CHECK-SAME: float nofpclass(snan inf zero psub norm) [[ARG:%.*]]) #[[ATTR5]] {
-; CHECK-NEXT:    [[RESULT:%.*]] = call nsz nofpclass(snan inf pzero sub pnorm) float @llvm.nearbyint.f32(float nofpclass(snan inf zero psub norm) [[ARG]]) #[[ATTR6]]
+; CHECK-NEXT:    [[RESULT:%.*]] = call nsz nofpclass(snan inf sub pnorm) float @llvm.nearbyint.f32(float nofpclass(snan inf zero psub norm) [[ARG]]) #[[ATTR6]]
 ; CHECK-NEXT:    ret float [[RESULT]]
 ;
   %result = call nsz float @llvm.nearbyint.f32(float %arg)

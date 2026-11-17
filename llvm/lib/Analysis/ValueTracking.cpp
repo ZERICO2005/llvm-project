@@ -6031,19 +6031,21 @@ void computeKnownFPClass(const Value *V, const APInt &DemandedElts,
       const bool IsMultiUnitFPType =
           V->getType()->getScalarType()->isMultiUnitFPType();
 
+      const bool HasNSZ = cast<FPMathOperator>(II)->hasNoSignedZeros();
+
       switch (IID) {
       case Intrinsic::trunc:
-        Known = KnownFPClass::trunc(KnownSrc, Mode);
+        Known = KnownFPClass::trunc(KnownSrc, Mode, HasNSZ);
         break;
       case Intrinsic::floor:
-        Known = KnownFPClass::floor(KnownSrc, IsMultiUnitFPType, Mode);
+        Known = KnownFPClass::floor(KnownSrc, IsMultiUnitFPType, Mode, HasNSZ);
         break;
       case Intrinsic::ceil:
-        Known = KnownFPClass::ceil(KnownSrc, IsMultiUnitFPType, Mode);
+        Known = KnownFPClass::ceil(KnownSrc, IsMultiUnitFPType, Mode, HasNSZ);
         break;
       default:
-        Known =
-            KnownFPClass::roundToIntegral(KnownSrc, IsMultiUnitFPType, Mode);
+        Known = KnownFPClass::roundToIntegral(KnownSrc, IsMultiUnitFPType, Mode,
+                                              HasNSZ);
         break;
       }
       break;

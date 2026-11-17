@@ -656,21 +656,24 @@ public:
   /// floating-point type.
   LLVM_ABI static KnownFPClass roundToIntegral(const KnownFPClass &Src,
                                                bool IsMultiUnitFPType,
-                                               DenormalMode Mode);
+                                               DenormalMode Mode,
+                                               bool MayBeNSZ);
 
   /// Propagate known class for trunc.
   LLVM_ABI static KnownFPClass trunc(const KnownFPClass &Src,
-                                     DenormalMode Mode);
+                                     DenormalMode Mode, bool MayBeNSZ);
 
   /// Propagate known class for floor. \p IsMultiUnitFPType if this is for a
   /// multi-unit floating-point type.
   LLVM_ABI static KnownFPClass floor(const KnownFPClass &Src,
-                                     bool IsMultiUnitFPType, DenormalMode Mode);
+                                     bool IsMultiUnitFPType, DenormalMode Mode,
+                                     bool MayBeNSZ);
 
   /// Propagate known class for ceil. \p IsMultiUnitFPType if this is for a
   /// multi-unit floating-point type.
   LLVM_ABI static KnownFPClass ceil(const KnownFPClass &Src,
-                                    bool IsMultiUnitFPType, DenormalMode Mode);
+                                    bool IsMultiUnitFPType, DenormalMode Mode,
+                                    bool MayBeNSZ);
 
   /// Propagate known class for mantissa component of frexp
   LLVM_ABI static KnownFPClass frexp_mant(const KnownFPClass &Src,

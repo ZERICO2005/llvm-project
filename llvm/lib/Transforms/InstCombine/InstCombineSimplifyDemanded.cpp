@@ -3457,19 +3457,21 @@ Value *InstCombinerImpl::SimplifyDemandedUseFPClass(Instruction *I,
           !Mode.inputsMayBeZero())
         return ConstantFP::get(VTy, 1.0);
 
+      const bool HasNSZ = FMF.noSignedZeros();
+
       switch (IID) {
       case Intrinsic::trunc:
-        Known = KnownFPClass::trunc(KnownSrc, Mode);
+        Known = KnownFPClass::trunc(KnownSrc, Mode, HasNSZ);
         break;
       case Intrinsic::floor:
-        Known = KnownFPClass::floor(KnownSrc, IsMultiUnitFPType, Mode);
+        Known = KnownFPClass::floor(KnownSrc, IsMultiUnitFPType, Mode, HasNSZ);
         break;
       case Intrinsic::ceil:
-        Known = KnownFPClass::ceil(KnownSrc, IsMultiUnitFPType, Mode);
+        Known = KnownFPClass::ceil(KnownSrc, IsMultiUnitFPType, Mode, HasNSZ);
         break;
       default:
-        Known =
-            KnownFPClass::roundToIntegral(KnownSrc, IsMultiUnitFPType, Mode);
+        Known = KnownFPClass::roundToIntegral(KnownSrc, IsMultiUnitFPType, Mode,
+                                              HasNSZ);
         break;
       }
 

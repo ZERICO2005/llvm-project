@@ -1399,8 +1399,8 @@ KnownFPClass KnownFPClass::fptrunc(const KnownFPClass &KnownSrc,
 
 KnownFPClass KnownFPClass::roundToIntegral(const KnownFPClass &KnownSrc_,
                                            bool MayBeMultiUnitFPType,
-                                           DenormalMode Mode) {
-  KnownFPClass KnownSrc = applyInputDenormalMode(KnownSrc_, Mode);
+                                           DenormalMode Mode, bool MayBeNSZ) {
+  KnownFPClass KnownSrc = applyInputSemantics(KnownSrc_, Mode, MayBeNSZ);
 
   KnownFPClass Known;
 
@@ -1438,8 +1438,8 @@ KnownFPClass KnownFPClass::roundToIntegral(const KnownFPClass &KnownSrc_,
 }
 
 KnownFPClass KnownFPClass::trunc(const KnownFPClass &KnownSrc_,
-                                 DenormalMode Mode) {
-  KnownFPClass KnownSrc = applyInputDenormalMode(KnownSrc_, Mode);
+                                 DenormalMode Mode, bool MayBeNSZ) {
+  KnownFPClass KnownSrc = applyInputSemantics(KnownSrc_, Mode, MayBeNSZ);
   KnownFPClass Known;
   Known.knownNot(fcSubnormal);
   Known.propagateNonNaN(KnownSrc);
@@ -1475,8 +1475,9 @@ KnownFPClass KnownFPClass::trunc(const KnownFPClass &KnownSrc_,
 }
 
 KnownFPClass KnownFPClass::floor(const KnownFPClass &KnownSrc_,
-                                 bool IsMultiUnitFPType, DenormalMode Mode) {
-  KnownFPClass KnownSrc = applyInputDenormalMode(KnownSrc_, Mode);
+                                 bool IsMultiUnitFPType, DenormalMode Mode,
+                                 bool MayBeNSZ) {
+  KnownFPClass KnownSrc = applyInputSemantics(KnownSrc_, Mode, MayBeNSZ);
   KnownFPClass Known;
   Known.knownNot(fcSubnormal);
   Known.propagateNonNaN(KnownSrc);
@@ -1510,8 +1511,9 @@ KnownFPClass KnownFPClass::floor(const KnownFPClass &KnownSrc_,
 }
 
 KnownFPClass KnownFPClass::ceil(const KnownFPClass &KnownSrc_,
-                                bool IsMultiUnitFPType, DenormalMode Mode) {
-  KnownFPClass KnownSrc = applyInputDenormalMode(KnownSrc_, Mode);
+                                bool IsMultiUnitFPType, DenormalMode Mode,
+                                bool MayBeNSZ) {
+  KnownFPClass KnownSrc = applyInputSemantics(KnownSrc_, Mode, MayBeNSZ);
   KnownFPClass Known;
   Known.knownNot(fcSubnormal);
   Known.propagateNonNaN(KnownSrc);
